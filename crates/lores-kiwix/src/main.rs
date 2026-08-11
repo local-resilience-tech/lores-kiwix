@@ -46,13 +46,18 @@ async fn main() {
     // Wait for the node to finish replay before publishing startup operations.
     let _ = ready_rx.changed().await;
 
-    for (zim_path, book_id) in &registered {
+    for zim in &registered {
+        let filename = std::path::Path::new(&zim.path)
+            .file_name()
+            .and_then(|n| n.to_str())
+            .unwrap_or(&zim.path)
+            .to_string();
         let op = AppOperation::ZimRegisteredV1(ZimRegisteredDataV1 {
-            path: zim_path.clone(),
-            book_id: book_id.clone(),
+            filename,
+            book_id: zim.book_id.clone(),
         });
         if let Err(e) = node.publish(&op).await {
-            eprintln!("Failed to publish ZimRegisteredV1 for {}: {}", zim_path, e);
+            eprintln!("Failed to publish ZimRegisteredV1 for {}: {}", zim.path, e);
         }
     }
 
