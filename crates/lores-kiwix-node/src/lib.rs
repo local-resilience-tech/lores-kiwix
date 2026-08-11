@@ -5,7 +5,7 @@ use crate::operations::AppOperation;
 
 pub mod operations;
 
-pub type LoresWebsiteNode = AppNode<AppOperation>;
+pub type LoresKiwixNode = AppNode<AppOperation>;
 
 const SCHEMA: &str = include_str!("schema.sql");
 
@@ -14,7 +14,7 @@ pub async fn connect(
     grpc_addr: String,
     app_id: impl Into<String>,
     instance_id: impl Into<String>,
-) -> Result<LoresWebsiteNode, sqlx::Error> {
+) -> Result<LoresKiwixNode, sqlx::Error> {
     AppNode::grpc_with_local(local_operations_pool, grpc_addr, app_id, instance_id).await
 }
 

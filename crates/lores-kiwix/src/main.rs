@@ -37,6 +37,10 @@ async fn main() {
 
     let data_dir = std::env::var(DATA_DIR_ENV).unwrap_or_else(|_| DATA_DIR_DEFAULT.to_string());
 
+    let (db, should_replay) = lores_kiwix_node::create_projection_db()
+        .await
+        .expect("failed to create projection database");
+
     let operations_db_path = format!("{data_dir}/operations.sqlite");
     let operations_pool = sqlx::sqlite::SqlitePoolOptions::new()
         .connect(&format!("sqlite://{operations_db_path}?mode=rwc"))
@@ -46,6 +50,18 @@ async fn main() {
     let node = lores_kiwix_node::connect(operations_pool, panda_grpc_addr, &app_id, &instance_id)
         .await
         .expect("failed to connect node");
+
+    let run_node = node.clone();
+
+    let (ready_tx, ready_rx) = tokio::sync::watch::channel(false);
+
+    tokio::spawn(async move {
+        if should_replay {
+            run_node.replay().await.expect("replay failed");
+        }
+        let _ = ready_tx.send(true);
+        run_node.run().await;
+    });
 
     let path = &args[1];
     let bind = args.get(2).map(|s| s.as_str()).unwrap_or("0.0.0.0:8080");

@@ -4,8 +4,6 @@
 -- Edit this file freely — the framework detects changes via a content hash
 -- and will drop and rebuild the database, then replay all operations.
 
-CREATE TABLE websites (
-    id          TEXT PRIMARY KEY,
-    name        TEXT NOT NULL,
-    description TEXT
+CREATE TABLE zims (
+    id          TEXT PRIMARY KEY
 );
