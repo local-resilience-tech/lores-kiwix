@@ -2,6 +2,7 @@ use std::env;
 
 use libkiwix_rust::{self as kiwix, IpMode, ServerConfig};
 
+mod events;
 mod library;
 
 const PANDA_GRPC_ADDR_ENV: &str = "PANDA_GRPC_ADDR";
@@ -31,37 +32,7 @@ async fn main() {
         std::process::exit(1);
     }
 
-    let panda_grpc_addr = std::env::var(PANDA_GRPC_ADDR_ENV).unwrap_or_else(|_| PANDA_GRPC_ADDR_DEFAULT.to_string());
-    let app_id = std::env::var(APP_ID_ENV).unwrap_or_else(|_| APP_ID_DEFAULT.to_string());
-    let instance_id = std::env::var(INSTANCE_ID_ENV).unwrap_or_else(|_| INSTANCE_ID_DEFAULT.to_string());
-
-    let data_dir = std::env::var(DATA_DIR_ENV).unwrap_or_else(|_| DATA_DIR_DEFAULT.to_string());
-
-    let (db, should_replay) = lores_kiwix_node::create_projection_db()
-        .await
-        .expect("failed to create projection database");
-
-    let operations_db_path = format!("{data_dir}/operations.sqlite");
-    let operations_pool = sqlx::sqlite::SqlitePoolOptions::new()
-        .connect(&format!("sqlite://{operations_db_path}?mode=rwc"))
-        .await
-        .expect("failed to open operations database");
-
-    let node = lores_kiwix_node::connect(operations_pool, panda_grpc_addr, &app_id, &instance_id)
-        .await
-        .expect("failed to connect node");
-
-    let run_node = node.clone();
-
-    let (ready_tx, ready_rx) = tokio::sync::watch::channel(false);
-
-    tokio::spawn(async move {
-        if should_replay {
-            run_node.replay().await.expect("replay failed");
-        }
-        let _ = ready_tx.send(true);
-        run_node.run().await;
-    });
+    let (_node, _ready_rx, _node_task) = start_node().await;
 
     let path = &args[1];
     let bind = args.get(2).map(|s| s.as_str()).unwrap_or("0.0.0.0:8080");
@@ -90,6 +61,48 @@ async fn main() {
     loop {
         std::thread::sleep(std::time::Duration::from_secs(60));
     }
+}
+
+async fn start_node() -> (
+    lores_kiwix_node::LoresKiwixNode,
+    tokio::sync::watch::Receiver<bool>,
+    tokio::task::JoinHandle<()>,
+) {
+    let panda_grpc_addr = std::env::var(PANDA_GRPC_ADDR_ENV).unwrap_or_else(|_| PANDA_GRPC_ADDR_DEFAULT.to_string());
+    let app_id = std::env::var(APP_ID_ENV).unwrap_or_else(|_| APP_ID_DEFAULT.to_string());
+    let instance_id = std::env::var(INSTANCE_ID_ENV).unwrap_or_else(|_| INSTANCE_ID_DEFAULT.to_string());
+
+    let data_dir = std::env::var(DATA_DIR_ENV).unwrap_or_else(|_| DATA_DIR_DEFAULT.to_string());
+
+    let (_db, should_replay) = lores_kiwix_node::create_projection_db()
+        .await
+        .expect("failed to create projection database");
+
+    let operations_db_path = format!("{data_dir}/operations.sqlite");
+    let operations_pool = sqlx::sqlite::SqlitePoolOptions::new()
+        .connect(&format!("sqlite://{operations_db_path}?mode=rwc"))
+        .await
+        .expect("failed to open operations database");
+
+    let node = lores_kiwix_node::connect(operations_pool, panda_grpc_addr, &app_id, &instance_id)
+        .await
+        .expect("failed to connect node");
+
+    let run_node = node.clone();
+
+    events::register_event_handlers(&node);
+
+    let (ready_tx, ready_rx) = tokio::sync::watch::channel(false);
+
+    let handle = tokio::spawn(async move {
+        if should_replay {
+            run_node.replay().await.expect("replay failed");
+        }
+        let _ = ready_tx.send(true);
+        run_node.run().await;
+    });
+
+    (node, ready_rx, handle)
 }
 
 fn parse_bind(bind: &str) -> (String, i32) {
