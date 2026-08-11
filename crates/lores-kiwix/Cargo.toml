@@ -6,3 +6,5 @@ edition = "2024"
 [dependencies]
 libkiwix-rust = { path = "../libkiwix-rust" }
 lores-kiwix-node = { path = "../lores-kiwix-node" }
+sqlx = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
