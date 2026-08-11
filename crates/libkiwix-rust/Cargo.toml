@@ -1,0 +1,12 @@
+[package]
+name = "libkiwix-rust"
+version = "0.1.0"
+edition = "2024"
+links = "kiwix"
+
+[dependencies]
+cxx = { workspace = true }
+
+[build-dependencies]
+cxx-build = "1.0"
+pkg-config = "0.3"
