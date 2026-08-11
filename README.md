@@ -2,6 +2,10 @@
 
 An alternative to [kiwix-serve](https://github.com/kiwix/kiwix-tools) for the [LoRes Mesh](https://lores.tech/) project.
 
+## License
+
+This application is licensed under the [GPL-3.0 license](./LICENSE.md), as it depends on [libkiwix](https://github.com/kiwix/libkiwix) which also uses that license.
+
 ## Developing
 
 ### Dependencies
