@@ -3,4 +3,13 @@
     "target": true
   },
   "C_Cpp.errorSquiggles": "enabled",
+  "C_Cpp.formatting": "disabled",
+  "[cpp]": {
+    "editor.formatOnSave": false,
+    "editor.defaultFormatter": null
+  },
+  "[c]": {
+    "editor.formatOnSave": false,
+    "editor.defaultFormatter": null
+  }
 }
