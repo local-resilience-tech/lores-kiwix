@@ -4,6 +4,7 @@
 #pragma diag_default 1696
 
 #include <cstdint>
+#include <kiwix/manager.h>
 
 std::shared_ptr<kiwix::Library> create_library() {
     return kiwix::Library::create();
@@ -19,6 +20,11 @@ void book_set_path(kiwix::Book& book, rust::Str path) {
 
 bool library_add_book(kiwix::Library& library, const kiwix::Book& book) {
     return library.addBook(book);
+}
+
+rust::String library_add_book_from_path(kiwix::Library& library, rust::Str path) {
+    kiwix::Manager manager(library.shared_from_this());
+    return rust::String(manager.addBookFromPathAndGetId(std::string(path)));
 }
 
 std::shared_ptr<kiwix::Server> create_server(std::shared_ptr<kiwix::Library> library) {

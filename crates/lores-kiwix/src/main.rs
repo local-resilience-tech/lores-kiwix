@@ -78,8 +78,8 @@ fn add_path_to_library(library: &mut kiwix::Library, path: &str) {
 }
 
 fn add_zim(library: &mut kiwix::Library, path: &str) {
-    let mut book = kiwix::new_book();
-    kiwix::book_set_path(&mut book, path);
-    kiwix::library_add_book(library, &book);
-    eprintln!("Added: {}", path);
+    match kiwix::library_add_book_from_path(library, path) {
+        Some(id) => eprintln!("Added: {} (id={})", path, id),
+        None => eprintln!("Failed to add: {}", path),
+    }
 }

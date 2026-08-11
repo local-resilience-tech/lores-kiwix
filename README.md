@@ -10,4 +10,10 @@ This application is licensed under the [GPL-3.0 license](./LICENSE.md), as it de
 
 ### Dependencies
 
-You will need libkiwix-dev installed on your machine. On ubuntu or debian, run `sudo apt install libkiwix-dev`.
+You will need libkiwix-dev installed on your machine. On ubuntu or debian, run:
+
+```
+sudo add-apt-repository ppa:kiwixteam/release
+sudo apt update
+sudo apt install libkiwix-dev libkiwix14
+```

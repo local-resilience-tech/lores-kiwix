@@ -33,6 +33,10 @@ mod ffi {
         /// `false` if an existing book was updated.
         fn library_add_book(library: Pin<&mut Library>, book: &Book) -> bool;
 
+        /// Add a book to a library by path, opening the ZIM and populating
+        /// metadata. Returns the book ID, or an empty string on failure.
+        fn library_add_book_from_path(library: Pin<&mut Library>, path: &str) -> String;
+
         /// Create a server for the given library.
         fn create_server(library: SharedPtr<Library>) -> SharedPtr<Server>;
 
@@ -75,6 +79,21 @@ pub fn library_add_book(library: &mut Library, book: &cxx::SharedPtr<ffi::Book>)
     // SAFETY: `Library` is an opaque C++ type; `addBook` is thread-safe for
     // opaque types per the CXX `pin_mut_unchecked` documentation.
     unsafe { ffi::library_add_book(library.pin_mut_unchecked(), book.as_ref().unwrap()) }
+}
+
+/// Add a book to a library by opening the ZIM file at `path`.
+///
+/// Returns the book ID on success, or `None` if libkiwix could not read the
+/// file or rejected it.
+pub fn library_add_book_from_path(library: &mut Library, path: &str) -> Option<String> {
+    // SAFETY: `Library` is an opaque C++ type; `addBookFromPathAndGetId` is a
+    // non-const member function documented as safe via `pin_mut_unchecked`.
+    let id = unsafe { ffi::library_add_book_from_path(library.pin_mut_unchecked(), path) };
+    if id.is_empty() {
+        None
+    } else {
+        Some(id.to_string())
+    }
 }
 
 /// Server address configuration.
