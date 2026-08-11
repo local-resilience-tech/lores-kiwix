@@ -172,6 +172,9 @@ dependencies = [
 [[package]]
 name = "lores-kiwix"
 version = "0.1.0"
+dependencies = [
+ "libkiwix-rust",
+]
 
 [[package]]
 name = "pkg-config"
