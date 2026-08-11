@@ -1,6 +1,7 @@
 use std::env;
 
 use libkiwix_rust::{self as kiwix, IpMode, ServerConfig};
+use lores_kiwix_node::operations::{AppOperation, ZimRegisteredDataV1};
 
 mod events;
 mod library;
@@ -32,7 +33,7 @@ async fn main() {
         std::process::exit(1);
     }
 
-    let (_node, _ready_rx, _node_task) = start_node().await;
+    let (node, mut ready_rx, _node_task) = start_node().await;
 
     let path = &args[1];
     let bind = args.get(2).map(|s| s.as_str()).unwrap_or("0.0.0.0:8080");
@@ -40,7 +41,20 @@ async fn main() {
 
     let mut library = kiwix::new_library();
 
-    library::add_path_to_library(&mut library, path);
+    let registered = library::add_path_to_library(&mut library, path);
+
+    // Wait for the node to finish replay before publishing startup operations.
+    let _ = ready_rx.changed().await;
+
+    for (zim_path, book_id) in &registered {
+        let op = AppOperation::ZimRegisteredV1(ZimRegisteredDataV1 {
+            path: zim_path.clone(),
+            book_id: book_id.clone(),
+        });
+        if let Err(e) = node.publish(&op).await {
+            eprintln!("Failed to publish ZimRegisteredV1 for {}: {}", zim_path, e);
+        }
+    }
 
     let mut server = kiwix::new_server(
         library,
