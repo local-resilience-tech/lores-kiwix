@@ -1010,7 +1010,16 @@ name = "lores-kiwix"
 version = "0.1.0"
 dependencies = [
  "libkiwix-rust",
+ "lores-kiwix-node",
+]
+
+[[package]]
+name = "lores-kiwix-node"
+version = "0.1.0"
+dependencies = [
  "lores-app-node",
+ "serde",
+ "sqlx",
 ]
 
 [[package]]

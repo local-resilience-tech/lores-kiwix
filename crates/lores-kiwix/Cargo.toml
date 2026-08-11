@@ -5,4 +5,4 @@ edition = "2024"
 
 [dependencies]
 libkiwix-rust = { path = "../libkiwix-rust" }
-lores-app-node = { path = "../lores-app-node" }
+lores-kiwix-node = { path = "../lores-kiwix-node" }
