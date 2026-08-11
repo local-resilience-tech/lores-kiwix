@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/lores-kiwix", "crates/libkiwix-rust"]
+members = ["crates/lores-kiwix", "crates/libkiwix-rust", "crates/lores-app-node"]
 
 [workspace.dependencies]
 cxx = "1.0"
