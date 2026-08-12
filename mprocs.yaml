@@ -13,6 +13,7 @@ procs:
       exec env PANDA_GRPC_ADDR="$PANDA_GRPC_ADDR"
       LORES_INSTANCE_ID=instance-a
       DATA_DIR=./.dev/data-a
+      KIWIX_INTERNAL_BIND=127.0.0.1:18080
       cargo run -p lores-kiwix -- ./.dev/data-a/zims "127.0.0.1:$BASE_PORT"
   kiwix-b:
     cwd: <CONFIG_DIR>
@@ -20,6 +21,7 @@ procs:
       exec env PANDA_GRPC_ADDR="$PANDA_GRPC_ADDR"
       LORES_INSTANCE_ID=instance-b
       DATA_DIR=./.dev/data-b
+      KIWIX_INTERNAL_BIND=127.0.0.1:18081
       cargo run -p lores-kiwix -- ./.dev/data-b/zims "127.0.0.1:$BASE_PORT_2"
 
 keymap:

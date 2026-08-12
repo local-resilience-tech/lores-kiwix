@@ -1,16 +1,21 @@
 use lores_kiwix_node::{LoresKiwixNode, operations::AppOperation};
+use sqlx::SqlitePool;
 
-pub fn register_event_handlers(node: &LoresKiwixNode) {
+use crate::projection::zims;
+
+pub fn register_event_handlers(node: &LoresKiwixNode, pool: SqlitePool) {
     let mut rx = node.subscribe();
 
     tokio::spawn(async move {
         loop {
             match rx.recv().await {
                 Ok(AppOperation::ZimRegisteredV1(data)) => {
-                    println!("ZimRegisteredV1 event received: {:?}", data);
+                    if let Err(err) = zims::insert_zim(&pool, &data).await {
+                        tracing::error!(error = %err, "Failed to insert ZIM into projection");
+                    }
                 }
                 Err(tokio::sync::broadcast::error::RecvError::Lagged(n)) => {
-                    println!("Event handler lagged, skipped {n} events");
+                    tracing::warn!(skipped = n, "Event handler lagged");
                 }
                 Err(tokio::sync::broadcast::error::RecvError::Closed) => break,
             }

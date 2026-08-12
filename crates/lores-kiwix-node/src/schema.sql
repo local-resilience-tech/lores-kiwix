@@ -5,5 +5,14 @@
 -- and will drop and rebuild the database, then replay all operations.
 
 CREATE TABLE zims (
-    id          TEXT PRIMARY KEY
+    id          TEXT PRIMARY KEY NOT NULL,
+    filename    TEXT NOT NULL,
+    name        TEXT,
+    date        TEXT,
+    flavour     TEXT,
+    title       TEXT,
+    description TEXT,
+    language    TEXT,
+    creator     TEXT,
+    publisher   TEXT
 );
