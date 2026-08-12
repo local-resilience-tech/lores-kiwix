@@ -1,7 +1,5 @@
 use std::net::SocketAddr;
-
 use tonic::transport::Server;
-use tracing::info;
 
 use crate::proto::panda_server::PandaServer;
 use crate::service::DevPandaService;
