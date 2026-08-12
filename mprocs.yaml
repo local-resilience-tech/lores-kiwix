@@ -1,0 +1,26 @@
+# Run the multi-instance dev stack with `just dev`.
+#
+# mprocs 0.9 doesn't substitute {{...}} templates, so each command is a shell
+# string that reads the environment variables exported by `justfile`. `exec`
+# replaces the shell process so mprocs signals reach cargo directly.
+procs:
+  panda-dev-server:
+    cwd: <CONFIG_DIR>
+    shell: "exec cargo run -p lores-p2panda-dev-server"
+  kiwix-a:
+    cwd: <CONFIG_DIR>
+    shell: >-
+      exec env PANDA_GRPC_ADDR="$PANDA_GRPC_ADDR"
+      LORES_INSTANCE_ID=instance-a
+      DATA_DIR=./.dev/data-a
+      cargo run -p lores-kiwix -- ./.dev/data-a/zims "127.0.0.1:$BASE_PORT"
+  kiwix-b:
+    cwd: <CONFIG_DIR>
+    shell: >-
+      exec env PANDA_GRPC_ADDR="$PANDA_GRPC_ADDR"
+      LORES_INSTANCE_ID=instance-b
+      DATA_DIR=./.dev/data-b
+      cargo run -p lores-kiwix -- ./.dev/data-b/zims "127.0.0.1:$BASE_PORT_2"
+
+keymap:
+  quit: q

@@ -17,7 +17,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap_or_else(|_| "127.0.0.1:50051".to_string())
         .parse()?;
 
-    info!(%addr, "starting lores-p2panda-dev-server");
+    println!("starting lores-p2panda-dev-server at {}, press CTRL-C to cancel", addr);
 
     Server::builder()
         .add_service(PandaServer::new(DevPandaService::new()))
