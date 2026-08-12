@@ -79,7 +79,7 @@ async fn main() {
         },
     );
 
-    eprintln!("Starting lores-kiwix on http://{}", bind);
+    eprintln!("Starting lores-kiwix on {}", bind);
     if !kiwix::server_start(&mut server) {
         eprintln!("Failed to start server");
         std::process::exit(1);

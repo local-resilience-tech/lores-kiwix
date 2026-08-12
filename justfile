@@ -11,6 +11,7 @@ export PANDA_GRPC_ADDR := env_var_or_default("PANDA_GRPC_ADDR", "http://127.0.0.
 # Base HTTP port for the first lores-kiwix instance; the second uses port+1.
 export BASE_PORT := env_var_or_default("BASE_PORT", "8080")
 export BASE_PORT_2 := shell("echo $(( " + BASE_PORT + " + 1 ))")
+export RUST_LOG := env_var_or_default("RUST_LOG", "info")
 
 # Run the full multi-instance development stack.
 dev:
