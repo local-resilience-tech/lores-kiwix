@@ -3,6 +3,7 @@ use std::env;
 use libkiwix_rust::{self as kiwix, IpMode, ServerConfig};
 use lores_kiwix_node::operations::{AppOperation, ZimRegisteredDataV1};
 
+mod api;
 mod events;
 mod library;
 mod projection;
@@ -38,7 +39,7 @@ async fn main() {
         std::process::exit(1);
     }
 
-    let (node, mut ready_rx, _node_task) = start_node().await;
+    let (node, mut ready_rx, _node_task, projection_pool) = start_node().await;
 
     let path = &args[1];
 
@@ -86,7 +87,7 @@ async fn main() {
 
     wait_for_upstream(&upstream).await;
 
-    let app = proxy::app(&upstream);
+    let app = proxy::app(&upstream, projection_pool);
     let listener = tokio::net::TcpListener::bind(&public_bind)
         .await
         .expect("failed to bind public proxy port");
@@ -101,6 +102,7 @@ async fn start_node() -> (
     lores_kiwix_node::LoresKiwixNode,
     tokio::sync::watch::Receiver<bool>,
     tokio::task::JoinHandle<()>,
+    sqlx::SqlitePool,
 ) {
     let panda_grpc_addr = std::env::var(PANDA_GRPC_ADDR_ENV).unwrap_or_else(|_| PANDA_GRPC_ADDR_DEFAULT.to_string());
     let app_id = std::env::var(APP_ID_ENV).unwrap_or_else(|_| APP_ID_DEFAULT.to_string());
@@ -124,7 +126,7 @@ async fn start_node() -> (
 
     let run_node = node.clone();
 
-    events::register_event_handlers(&node, projection_pool);
+    events::register_event_handlers(&node, projection_pool.clone());
 
     let (ready_tx, ready_rx) = tokio::sync::watch::channel(false);
 
@@ -136,7 +138,7 @@ async fn start_node() -> (
         run_node.run().await;
     });
 
-    (node, ready_rx, handle)
+    (node, ready_rx, handle, projection_pool)
 }
 
 fn parse_bind(bind: &str) -> (String, i32) {

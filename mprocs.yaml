@@ -23,6 +23,7 @@ procs:
       DATA_DIR=./.dev/data-b
       KIWIX_INTERNAL_BIND=127.0.0.1:18081
       cargo run -p lores-kiwix -- ./.dev/data-b/zims "127.0.0.1:$BASE_PORT_2"
+    autostart: false
 
 keymap:
   quit: q
