@@ -60,15 +60,13 @@ impl OperationStore for OutboxStore {
 
     fn subscribe(
         &mut self,
-    ) -> Pin<Box<dyn std::future::Future<Output = Result<OperationStream, StoreError>> + Send + '_>>
-    {
+    ) -> Pin<Box<dyn std::future::Future<Output = Result<OperationStream, StoreError>> + Send + '_>> {
         self.remote.subscribe()
     }
 
     fn replay(
         &mut self,
-    ) -> Pin<Box<dyn std::future::Future<Output = Result<OperationStream, StoreError>> + Send + '_>>
-    {
+    ) -> Pin<Box<dyn std::future::Future<Output = Result<OperationStream, StoreError>> + Send + '_>> {
         self.local.replay()
     }
 }

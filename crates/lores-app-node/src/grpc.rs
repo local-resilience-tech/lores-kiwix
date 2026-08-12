@@ -59,8 +59,7 @@ impl OperationStore for GrpcOperationStore {
 
     fn subscribe(
         &mut self,
-    ) -> Pin<Box<dyn std::future::Future<Output = Result<OperationStream, StoreError>> + Send + '_>>
-    {
+    ) -> Pin<Box<dyn std::future::Future<Output = Result<OperationStream, StoreError>> + Send + '_>> {
         Box::pin(async move {
             let response = self
                 .client

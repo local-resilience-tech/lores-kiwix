@@ -32,9 +32,7 @@ impl ProjectionDb {
 
     pub async fn in_memory(schema_sql: &str) -> Result<(SqlitePool, bool), sqlx::Error> {
         tracing::info!("creating in-memory projection database");
-        let options = SqliteConnectOptions::new()
-            .filename(":memory:")
-            .create_if_missing(true);
+        let options = SqliteConnectOptions::new().filename(":memory:").create_if_missing(true);
 
         // A pool with more than one connection would give each connection its
         // own isolated in-memory database. Pin to one connection so all
@@ -55,9 +53,7 @@ impl ProjectionDb {
     /// user tables are dropped and the schema is re-applied.  Returns `true`
     /// if a rebuild occurred (signalling that the caller should replay ops).
     pub async fn open(path: &str, schema_sql: &str) -> Result<(SqlitePool, bool), sqlx::Error> {
-        let options = SqliteConnectOptions::new()
-            .filename(path)
-            .create_if_missing(true);
+        let options = SqliteConnectOptions::new().filename(path).create_if_missing(true);
 
         let pool = SqlitePool::connect_with(options).await?;
         let new_hash = Self::hash(schema_sql);
@@ -77,10 +73,7 @@ impl ProjectionDb {
             Self::apply_schema(&pool, schema_sql).await?;
             tracing::info!("projection database rebuild complete");
         } else {
-            tracing::info!(
-                path,
-                "projection database schema unchanged, skipping rebuild"
-            );
+            tracing::info!(path, "projection database schema unchanged, skipping rebuild");
         }
 
         Ok((pool, needs_rebuild))

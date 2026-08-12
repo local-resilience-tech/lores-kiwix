@@ -7,7 +7,7 @@ fn main() {
         .probe("libkiwix")
         .expect(
             "libkiwix not found via pkg-config. \
-             Build/install libkiwix and set PKG_CONFIG_PATH if it is not in the default path."
+             Build/install libkiwix and set PKG_CONFIG_PATH if it is not in the default path.",
         );
 
     let mut build = cxx_build::bridge("src/lib.rs");

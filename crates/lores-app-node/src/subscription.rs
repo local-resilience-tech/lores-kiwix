@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
-use tokio::sync::{watch, Mutex};
 use crate::backoff::Backoff;
 use crate::consumer::OperationConsumer;
 use crate::node::{map_store_error, NodeError};
 use crate::store::{OperationStore, StoreError};
+use tokio::sync::{watch, Mutex};
 
 /// Drives a remote subscription in a loop, reconnecting with exponential
 /// backoff on any failure.

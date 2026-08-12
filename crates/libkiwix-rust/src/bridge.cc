@@ -26,7 +26,24 @@ rust::String library_add_book_from_path(kiwix::Library& library, rust::Str path)
     kiwix::Manager manager(library.shared_from_this());
     return rust::String(manager.addBookFromPathAndGetId(std::string(path)));
 }
+std::shared_ptr<kiwix::Book> library_get_book_by_id(kiwix::Library& library, rust::Str id) {
+  try {
+    auto book = library.getBookByIdThreadSafe(std::string(id));
+    return std::make_shared<kiwix::Book>(std::move(book));
+  } catch (...) {
+    return nullptr;
+  }
+}
 
+rust::String book_get_id(const kiwix::Book& book) { return rust::String(book.getId()); }
+rust::String book_get_name(const kiwix::Book& book) { return rust::String(book.getName()); }
+rust::String book_get_date(const kiwix::Book& book) { return rust::String(book.getDate()); }
+rust::String book_get_flavour(const kiwix::Book& book) { return rust::String(book.getFlavour()); }
+rust::String book_get_title(const kiwix::Book& book) { return rust::String(book.getTitle()); }
+rust::String book_get_description(const kiwix::Book& book) { return rust::String(book.getDescription()); }
+rust::String book_get_language(const kiwix::Book& book) { return rust::String(book.getCommaSeparatedLanguages()); }
+rust::String book_get_creator(const kiwix::Book& book) { return rust::String(book.getCreator()); }
+rust::String book_get_publisher(const kiwix::Book& book) { return rust::String(book.getPublisher()); }
 std::shared_ptr<kiwix::Server> create_server(std::shared_ptr<kiwix::Library> library) {
     return std::make_shared<kiwix::Server>(library);
 }

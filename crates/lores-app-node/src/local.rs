@@ -63,8 +63,7 @@ impl OperationStore for LocalOperationStore {
 
     fn subscribe(
         &mut self,
-    ) -> Pin<Box<dyn std::future::Future<Output = Result<OperationStream, StoreError>> + Send + '_>>
-    {
+    ) -> Pin<Box<dyn std::future::Future<Output = Result<OperationStream, StoreError>> + Send + '_>> {
         Box::pin(async move {
             let s: OperationStream = Box::pin(stream::empty());
             Ok(s)
@@ -73,15 +72,12 @@ impl OperationStore for LocalOperationStore {
 
     fn replay(
         &mut self,
-    ) -> Pin<Box<dyn std::future::Future<Output = Result<OperationStream, StoreError>> + Send + '_>>
-    {
+    ) -> Pin<Box<dyn std::future::Future<Output = Result<OperationStream, StoreError>> + Send + '_>> {
         Box::pin(async move {
-            let rows = sqlx::query_as::<_, (Vec<u8>,)>(
-                "SELECT payload FROM lores_app_operations ORDER BY id ASC",
-            )
-            .fetch_all(&self.pool)
-            .await
-            .map_err(|e| StoreError::Other(e.to_string()))?;
+            let rows = sqlx::query_as::<_, (Vec<u8>,)>("SELECT payload FROM lores_app_operations ORDER BY id ASC")
+                .fetch_all(&self.pool)
+                .await
+                .map_err(|e| StoreError::Other(e.to_string()))?;
 
             let s: OperationStream = Box::pin(stream::iter(rows).map(|(payload,)| Ok(payload)));
             Ok(s)

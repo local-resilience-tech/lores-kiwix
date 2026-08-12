@@ -52,9 +52,18 @@ async fn main() {
             .and_then(|n| n.to_str())
             .unwrap_or(&zim.path)
             .to_string();
+        let meta = &zim.metadata;
         let op = AppOperation::ZimRegisteredV1(ZimRegisteredDataV1 {
             filename,
-            book_id: zim.book_id.clone(),
+            book_id: meta.id.clone(),
+            name: meta.name.clone(),
+            date: meta.date.clone(),
+            flavour: meta.flavour.clone(),
+            title: meta.title.clone(),
+            description: meta.description.clone(),
+            language: meta.language.clone(),
+            creator: meta.creator.clone(),
+            publisher: meta.publisher.clone(),
         });
         if let Err(e) = node.publish(&op).await {
             eprintln!("Failed to publish ZimRegisteredV1 for {}: {}", zim.path, e);

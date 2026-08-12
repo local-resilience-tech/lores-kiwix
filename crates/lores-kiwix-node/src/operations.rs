@@ -10,6 +10,14 @@ use serde::{Deserialize, Serialize};
 pub struct ZimRegisteredDataV1 {
     pub filename: String,
     pub book_id: String,
+    pub name: String,
+    pub date: String,
+    pub flavour: String,
+    pub title: String,
+    pub description: String,
+    pub language: String,
+    pub creator: String,
+    pub publisher: String,
 }
 
 #[derive(Clone, Serialize, Deserialize)]

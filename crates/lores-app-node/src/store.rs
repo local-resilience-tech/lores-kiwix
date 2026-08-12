@@ -41,14 +41,10 @@ pub(crate) trait OperationStore: Send + Sync + 'static {
     ///
     /// The outer `Result` covers connection-time errors (e.g. `RegionNotBound`).
     /// The inner stream yields individual operation payloads or per-item errors.
-    fn subscribe(
-        &mut self,
-    ) -> Pin<Box<dyn Future<Output = Result<OperationStream, StoreError>> + Send + '_>>;
+    fn subscribe(&mut self) -> Pin<Box<dyn Future<Output = Result<OperationStream, StoreError>> + Send + '_>>;
 
     /// Replay all operations in insertion order.
-    fn replay(
-        &mut self,
-    ) -> Pin<Box<dyn Future<Output = Result<OperationStream, StoreError>> + Send + '_>> {
+    fn replay(&mut self) -> Pin<Box<dyn Future<Output = Result<OperationStream, StoreError>> + Send + '_>> {
         Box::pin(async move {
             let s: OperationStream = Box::pin(futures::stream::empty());
             Ok(s)

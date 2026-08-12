@@ -37,6 +37,28 @@ mod ffi {
         /// metadata. Returns the book ID, or an empty string on failure.
         fn library_add_book_from_path(library: Pin<&mut Library>, path: &str) -> String;
 
+        /// Look up a book by ID. Returns `null` if no book with that ID exists.
+        fn library_get_book_by_id(library: Pin<&mut Library>, id: &str) -> SharedPtr<Book>;
+
+        /// Get the embedded ZIM UUID of the book.
+        fn book_get_id(book: &Book) -> String;
+        /// Get the archive name (e.g. `wikipedia_en_all_maxi`).
+        fn book_get_name(book: &Book) -> String;
+        /// Get the archive date.
+        fn book_get_date(book: &Book) -> String;
+        /// Get the archive flavour (e.g. `maxi`, `mini`, `nopic`).
+        fn book_get_flavour(book: &Book) -> String;
+        /// Get the archive title.
+        fn book_get_title(book: &Book) -> String;
+        /// Get the archive description.
+        fn book_get_description(book: &Book) -> String;
+        /// Get the archive language(s) as a comma-separated list.
+        fn book_get_language(book: &Book) -> String;
+        /// Get the archive creator.
+        fn book_get_creator(book: &Book) -> String;
+        /// Get the archive publisher.
+        fn book_get_publisher(book: &Book) -> String;
+
         /// Create a server for the given library.
         fn create_server(library: SharedPtr<Library>) -> SharedPtr<Server>;
 
@@ -89,11 +111,44 @@ pub fn library_add_book_from_path(library: &mut Library, path: &str) -> Option<S
     // SAFETY: `Library` is an opaque C++ type; `addBookFromPathAndGetId` is a
     // non-const member function documented as safe via `pin_mut_unchecked`.
     let id = unsafe { ffi::library_add_book_from_path(library.pin_mut_unchecked(), path) };
-    if id.is_empty() {
-        None
-    } else {
-        Some(id.to_string())
+    if id.is_empty() { None } else { Some(id.to_string()) }
+}
+
+/// Metadata extracted from a ZIM archive.
+#[derive(Debug, Clone)]
+pub struct BookMetadata {
+    pub id: String,
+    pub name: String,
+    pub date: String,
+    pub flavour: String,
+    pub title: String,
+    pub description: String,
+    pub language: String,
+    pub creator: String,
+    pub publisher: String,
+}
+
+/// Look up a book by ID and return its metadata.
+///
+/// Returns `None` if no book with the given ID exists in the library.
+pub fn library_get_book_metadata(library: &mut Library, id: &str) -> Option<BookMetadata> {
+    // SAFETY: `Library` is an opaque C++ type; `getBookByIdThreadSafe` is
+    // invoked through a bridge function documented as safe via `pin_mut_unchecked`.
+    let book = unsafe { ffi::library_get_book_by_id(library.pin_mut_unchecked(), id) };
+    if book.is_null() {
+        return None;
     }
+    Some(BookMetadata {
+        id: ffi::book_get_id(book.as_ref().unwrap()),
+        name: ffi::book_get_name(book.as_ref().unwrap()),
+        date: ffi::book_get_date(book.as_ref().unwrap()),
+        flavour: ffi::book_get_flavour(book.as_ref().unwrap()),
+        title: ffi::book_get_title(book.as_ref().unwrap()),
+        description: ffi::book_get_description(book.as_ref().unwrap()),
+        language: ffi::book_get_language(book.as_ref().unwrap()),
+        creator: ffi::book_get_creator(book.as_ref().unwrap()),
+        publisher: ffi::book_get_publisher(book.as_ref().unwrap()),
+    })
 }
 
 /// Server address configuration.

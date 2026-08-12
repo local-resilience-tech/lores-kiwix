@@ -15,6 +15,17 @@ void book_set_path(kiwix::Book& book, rust::Str path);
 bool library_add_book(kiwix::Library& library, const kiwix::Book& book);
 
 rust::String library_add_book_from_path(kiwix::Library& library, rust::Str path);
+std::shared_ptr<kiwix::Book> library_get_book_by_id(kiwix::Library& library, rust::Str id);
+
+rust::String book_get_id(const kiwix::Book& book);
+rust::String book_get_name(const kiwix::Book& book);
+rust::String book_get_date(const kiwix::Book& book);
+rust::String book_get_flavour(const kiwix::Book& book);
+rust::String book_get_title(const kiwix::Book& book);
+rust::String book_get_description(const kiwix::Book& book);
+rust::String book_get_language(const kiwix::Book& book);
+rust::String book_get_creator(const kiwix::Book& book);
+rust::String book_get_publisher(const kiwix::Book& book);
 
 std::shared_ptr<kiwix::Server> create_server(std::shared_ptr<kiwix::Library> library);
 
