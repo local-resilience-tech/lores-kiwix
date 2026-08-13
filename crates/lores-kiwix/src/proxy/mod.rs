@@ -1,0 +1,41 @@
+use axum::{
+    Router,
+    body::Body,
+    http::{StatusCode, header},
+    response::Response,
+    routing::any,
+};
+use axum_reverse_proxy::ReverseProxy;
+use sqlx::SqlitePool;
+
+use crate::api::{ApiState, catalogue_entries};
+
+mod append_text;
+
+/// Build an Axum application that proxies every request to `upstream`,
+/// except for `/catalog/v2/entries` and `/skin/index.css` which are handled
+/// separately so we can merge in extra data before returning them.
+pub fn app(upstream: impl Into<String>, pool: SqlitePool) -> Router {
+    let state = ApiState::new(upstream, pool);
+
+    Router::new()
+        .route("/catalog/v2/entries", any(catalogue_entries::handler))
+        .route(
+            "/skin/index.css",
+            any(append_text::handler(
+                "/skin/index.css",
+                concat!(env!("CARGO_MANIFEST_DIR"), "/css/index.css"),
+            )),
+        )
+        .fallback_service(ReverseProxy::new("/", state.upstream.as_str()))
+        .with_state(state)
+}
+
+/// Build a simple text error response for proxy failures.
+pub fn proxy_error(status: StatusCode, message: &str) -> Response {
+    Response::builder()
+        .status(status)
+        .header(header::CONTENT_TYPE, "text/plain; charset=utf-8")
+        .body(Body::from(message.to_string()))
+        .unwrap()
+}

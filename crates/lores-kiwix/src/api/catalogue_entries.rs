@@ -4,9 +4,12 @@ use axum::{
     http::{StatusCode, header},
     response::Response,
 };
+
 use elementtree::Element;
 
-use crate::{api::ApiState, projection::zims};
+use crate::api::ApiState;
+use crate::projection::zims;
+use crate::proxy::proxy_error;
 
 const ATOM_NS: &str = "http://www.w3.org/2005/Atom";
 
@@ -46,14 +49,6 @@ pub async fn handler(State(state): State<ApiState>, req: Request) -> Response {
         .status(StatusCode::OK)
         .header(header::CONTENT_TYPE, "application/atom+xml; charset=utf-8")
         .body(Body::from(merged))
-        .unwrap()
-}
-
-fn proxy_error(status: StatusCode, message: &str) -> Response {
-    Response::builder()
-        .status(status)
-        .header(header::CONTENT_TYPE, "text/plain; charset=utf-8")
-        .body(Body::from(message.to_string()))
         .unwrap()
 }
 
