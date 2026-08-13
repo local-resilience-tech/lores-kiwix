@@ -11,10 +11,12 @@ use sqlx::SqlitePool;
 use crate::api::{ApiState, catalogue_entries};
 
 mod append_text;
+mod static_override;
 
 /// Build an Axum application that proxies every request to `upstream`,
-/// except for `/catalog/v2/entries` and `/skin/index.css` which are handled
-/// separately so we can merge in extra data before returning them.
+/// except for `/catalog/v2/entries`, `/skin/index.css`, and `/skin/index.js`
+/// which are handled separately so we can merge in extra data before returning
+/// them.
 pub fn app(upstream: impl Into<String>, pool: SqlitePool) -> Router {
     let state = ApiState::new(upstream, pool);
 
@@ -24,8 +26,15 @@ pub fn app(upstream: impl Into<String>, pool: SqlitePool) -> Router {
             "/skin/index.css",
             any(append_text::handler(
                 "/skin/index.css",
-                concat!(env!("CARGO_MANIFEST_DIR"), "/css/index.css"),
+                concat!(env!("CARGO_MANIFEST_DIR"), "/static/css/index.css"),
             )),
+        )
+        .route(
+            "/skin/index.js",
+            any(static_override::handler(concat!(
+                env!("CARGO_MANIFEST_DIR"),
+                "/static/js/index.js"
+            ))),
         )
         .fallback_service(ReverseProxy::new("/", state.upstream.as_str()))
         .with_state(state)
