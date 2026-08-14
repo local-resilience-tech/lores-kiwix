@@ -114,3 +114,56 @@ fn build_entry(zim: &zims::ZimRow, namespace: &str, feed: &Element) -> Element {
 
     entry
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // merge_catalog_entries
+
+    #[test]
+    fn merge_catalog_entries_returns_upstream_value() {
+        let body = r#"
+            <?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/terms/" xmlns:opds="https://specs.opds.io/opds-1.2" xmlns:opensearch="http://a9.com/-/spec/opensearch/1.1/">
+              <id>ece013ff-1e2c-37de-cb71-602f98c44a52</id>
+
+              <link href="/catalog/v2/entries?start=0&amp;count=20&amp;lang=eng" rel="self" type="application/atom+xml;profile=opds-catalog;kind=acquisition" />
+              <link href="/catalog/v2/root.xml" rel="start" type="application/atom+xml;profile=opds-catalog;kind=navigation" />
+              <link href="/catalog/v2/root.xml" rel="up" type="application/atom+xml;profile=opds-catalog;kind=navigation" />
+
+              <title>Filtered Entries (start=0&amp;count=20&amp;lang=eng)</title>
+              <updated>2026-08-14T15:52:17Z</updated>
+              <totalResults>1</totalResults>
+              <startIndex>0</startIndex>
+              <itemsPerPage>1</itemsPerPage>
+              <entry>
+                <id>urn:uuid:a5d5ec52-1652-4375-b62d-5380a40a353d</id>
+                <title>Golf by Wikipedia</title>
+                <updated>2026-07-17T00:00:00Z</updated>
+                <summary>A selection of Wikipedia articles on golf</summary>
+                <language>eng</language>
+                <name>wikipedia_en_golf</name>
+                <flavour>nopic</flavour>
+                <category>wikipedia</category>
+                <tags>wikipedia;_category:wikipedia;_pictures:no;_videos:no;_details:yes;_ftindex:yes</tags>
+                <articleCount>25938</articleCount>
+                <mediaCount>136</mediaCount>
+                <link href="/catalog/v2/illustration/a5d5ec52-1652-4375-b62d-5380a40a353d/?size=48" rel="http://opds-spec.org/image/thumbnail" type="image/png;width=48;height=48;scale=1" />
+                <link href="/content/a5d5ec52-1652-4375-b62d-5380a40a353d" type="text/html" />
+                <author>
+                  <name>Wikipedia</name>
+                </author>
+                <publisher>
+                  <name>openZIM</name>
+                </publisher>
+                <dc:issued>2026-07-17T00:00:00Z</dc:issued>
+              </entry>
+            </feed>
+        "#;
+
+        let results = merge_catalog_entries(body.as_bytes(), &[]);
+        let result_string = str::from_utf8(&results).unwrap();
+
+        assert_eq!(body, result_string);
+    }
+}

@@ -3,6 +3,7 @@ use sqlx::{FromRow, SqlitePool};
 
 /// A row from the `zims` projection table.
 #[derive(Debug, FromRow)]
+#[allow(dead_code)]
 pub struct ZimRow {
     pub id: String,
     pub filename: String,
