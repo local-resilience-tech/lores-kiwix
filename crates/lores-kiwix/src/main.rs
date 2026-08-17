@@ -8,6 +8,7 @@ mod events;
 mod library;
 mod projection;
 mod proxy;
+mod xml;
 
 const PANDA_GRPC_ADDR_ENV: &str = "PANDA_GRPC_ADDR";
 const PANDA_GRPC_ADDR_DEFAULT: &str = "http://127.0.0.1:50051";
