@@ -2,24 +2,24 @@ use lores_kiwix_node::operations::ZimRegisteredDataV1;
 use sqlx::{FromRow, SqlitePool};
 
 /// A row from the `zims` projection table.
-#[derive(Debug, FromRow)]
+#[derive(Debug, FromRow, Default)]
 #[allow(dead_code)]
-pub struct ZimRow {
+pub struct Zim {
     pub id: String,
     pub filename: String,
-    pub name: String,
-    pub date: String,
-    pub flavour: String,
-    pub title: String,
-    pub description: String,
-    pub language: String,
-    pub creator: String,
-    pub publisher: String,
+    pub name: Option<String>,
+    pub date: Option<String>,
+    pub flavour: Option<String>,
+    pub title: Option<String>,
+    pub description: Option<String>,
+    pub language: Option<String>,
+    pub creator: Option<String>,
+    pub publisher: Option<String>,
 }
 
 /// Return every ZIM recorded in the projection database.
-pub async fn list_zims(pool: &SqlitePool) -> Result<Vec<ZimRow>, sqlx::Error> {
-    sqlx::query_as::<_, ZimRow>("SELECT * FROM zims ORDER BY title")
+pub async fn list_zims(pool: &SqlitePool) -> Result<Vec<Zim>, sqlx::Error> {
+    sqlx::query_as::<_, Zim>("SELECT * FROM zims ORDER BY title")
         .fetch_all(pool)
         .await
 }

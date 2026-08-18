@@ -7,12 +7,10 @@ use axum::{
 
 use elementtree::Element;
 
-use crate::api::ApiState;
 use crate::projection::zims;
 use crate::proxy::proxy_error;
 use crate::xml::serialize::build_entry;
-
-const ATOM_NS: &str = "http://www.w3.org/2005/Atom";
+use crate::{api::ApiState, xml::serialize::ATOM_NS};
 
 /// Proxy the catalog request to the upstream kiwix server, then append any
 /// extra ZIMs recorded in the projection database.
@@ -55,7 +53,7 @@ pub async fn handler(State(state): State<ApiState>, req: Request) -> Response {
 
 /// Parse the upstream Atom/OPDS feed and inject `<entry>` elements for every
 /// ZIM in `extra_zims` just before the closing `</feed>` tag.
-fn merge_catalog_entries(upstream: &[u8], extra_zims: &[zims::ZimRow]) -> Vec<u8> {
+fn merge_catalog_entries(upstream: &[u8], extra_zims: &[zims::Zim]) -> Vec<u8> {
     if extra_zims.is_empty() {
         return upstream.to_vec();
     }
