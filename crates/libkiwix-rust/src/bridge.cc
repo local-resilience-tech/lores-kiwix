@@ -14,6 +14,61 @@ std::shared_ptr<kiwix::Book> create_book() {
     return std::make_shared<kiwix::Book>();
 }
 
+std::shared_ptr<kiwix::Filter> create_filter() {
+    return std::make_shared<kiwix::Filter>();
+}
+
+kiwix::Filter& filter_valid(kiwix::Filter& filter, bool accept) {
+    return filter.valid(accept);
+}
+
+kiwix::Filter& filter_local(kiwix::Filter& filter, bool accept) {
+    return filter.local(accept);
+}
+
+kiwix::Filter& filter_remote(kiwix::Filter& filter, bool accept) {
+    return filter.remote(accept);
+}
+
+kiwix::Filter& filter_query(kiwix::Filter& filter, rust::Str query) {
+    return filter.query(std::string(query));
+}
+
+kiwix::Filter& filter_lang(kiwix::Filter& filter, rust::Str lang) {
+    return filter.lang(std::string(lang));
+}
+
+kiwix::Filter& filter_category(kiwix::Filter& filter, rust::Str category) {
+    return filter.category(std::string(category));
+}
+
+kiwix::Filter& filter_name(kiwix::Filter& filter, rust::Str name) {
+    return filter.name(std::string(name));
+}
+
+kiwix::Filter& filter_accept_tags(kiwix::Filter& filter, const rust::Vec<rust::String>& tags) {
+    std::vector<std::string> vec(tags.begin(), tags.end());
+    return filter.acceptTags(vec);
+}
+
+kiwix::Filter& filter_reject_tags(kiwix::Filter& filter, const rust::Vec<rust::String>& tags) {
+    std::vector<std::string> vec(tags.begin(), tags.end());
+    return filter.rejectTags(vec);
+}
+
+kiwix::Filter& filter_max_size(kiwix::Filter& filter, size_t size) {
+    return filter.maxSize(size);
+}
+
+rust::Vec<rust::String> library_filter(kiwix::Library& library, const kiwix::Filter& filter) {
+    const auto bookIds = library.filter(filter);
+    rust::Vec<rust::String> result;
+    for (const auto& id : bookIds) {
+        result.push_back(rust::String(id));
+    }
+    return result;
+}
+
 void book_set_path(kiwix::Book& book, rust::Str path) {
     book.setPath(std::string(path));
 }
@@ -44,6 +99,26 @@ rust::String book_get_description(const kiwix::Book& book) { return rust::String
 rust::String book_get_language(const kiwix::Book& book) { return rust::String(book.getCommaSeparatedLanguages()); }
 rust::String book_get_creator(const kiwix::Book& book) { return rust::String(book.getCreator()); }
 rust::String book_get_publisher(const kiwix::Book& book) { return rust::String(book.getPublisher()); }
+rust::String book_get_category(const kiwix::Book& book) { return rust::String(book.getCategory()); }
+rust::String book_get_tags(const kiwix::Book& book) { return rust::String(book.getTags()); }
+rust::String book_get_url(const kiwix::Book& book) { return rust::String(book.getUrl()); }
+uint64_t book_get_article_count(const kiwix::Book& book) { return book.getArticleCount(); }
+uint64_t book_get_media_count(const kiwix::Book& book) { return book.getMediaCount(); }
+uint64_t book_get_size(const kiwix::Book& book) { return book.getSize(); }
+bool book_is_path_valid(const kiwix::Book& book) { return book.isPathValid(); }
+
+rust::Vec<BookIllustration> book_get_illustrations(const kiwix::Book& book) {
+    rust::Vec<BookIllustration> result;
+    for (const auto& illustration : book.getIllustrations()) {
+        result.push_back(BookIllustration{
+            illustration->width,
+            illustration->height,
+            rust::String(illustration->mimeType),
+            rust::String(illustration->url)
+        });
+    }
+    return result;
+}
 std::shared_ptr<kiwix::Server> create_server(std::shared_ptr<kiwix::Library> library) {
     return std::make_shared<kiwix::Server>(library);
 }

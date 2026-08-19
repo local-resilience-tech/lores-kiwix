@@ -1,3 +1,5 @@
+use std::sync::{Arc, Mutex};
+
 use axum::{
     Router,
     body::Body,
@@ -6,6 +8,7 @@ use axum::{
     routing::any,
 };
 use axum_reverse_proxy::ReverseProxy;
+use libkiwix_rust::LibraryHandle;
 use sqlx::SqlitePool;
 
 use crate::api::{ApiState, catalogue_entries};
@@ -17,8 +20,8 @@ mod static_override;
 /// except for `/catalog/v2/entries`, `/skin/index.css`, and `/skin/index.js`
 /// which are handled separately so we can merge in extra data before returning
 /// them.
-pub fn app(upstream: impl Into<String>, pool: SqlitePool) -> Router {
-    let state = ApiState::new(upstream, pool);
+pub fn app(upstream: impl Into<String>, pool: SqlitePool, library: Arc<Mutex<LibraryHandle>>) -> Router {
+    let state = ApiState::new(upstream, pool, library);
 
     Router::new()
         .route("/catalog/v2/entries", any(catalogue_entries::handler))

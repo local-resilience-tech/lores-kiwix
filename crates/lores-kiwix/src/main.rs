@@ -1,4 +1,5 @@
 use std::env;
+use std::sync::{Arc, Mutex};
 
 use libkiwix_rust::{self as kiwix, IpMode, ServerConfig};
 use lores_kiwix_node::operations::{AppOperation, ZimRegisteredDataV1};
@@ -50,9 +51,10 @@ async fn main() {
         .unwrap_or_else(|| panic!("could not find an available internal bind near {requested_internal_bind}"));
     let upstream = format!("http://{internal_bind}");
 
-    let registered = start_internal_kiwix_server(path, &internal_bind)
-        .recv()
-        .expect("internal kiwix server did not report loaded books");
+    let mut library = kiwix::new_library();
+    let registered = library::add_path_to_library(&mut library, path);
+    let shared_library = Arc::new(Mutex::new(kiwix::LibraryHandle::new(library.clone())));
+    let server_ready = start_internal_kiwix_server(kiwix::LibraryHandle::new(library), &internal_bind);
 
     // Wait for the node to finish replay before publishing startup operations.
     let _ = ready_rx.changed().await;
@@ -86,9 +88,12 @@ async fn main() {
         .map(|s| s.to_string())
         .unwrap_or_else(|| "0.0.0.0:8080".to_string());
 
+    server_ready
+        .recv()
+        .expect("internal kiwix server did not report ready");
     wait_for_upstream(&upstream).await;
 
-    let app = proxy::app(&upstream, projection_pool);
+    let app = proxy::app(&upstream, projection_pool, shared_library);
     let listener = tokio::net::TcpListener::bind(&public_bind)
         .await
         .expect("failed to bind public proxy port");
@@ -172,10 +177,12 @@ fn find_available_bind(requested: &str, fallback_count: usize) -> Option<String>
 
 /// Start libkiwix on an internal address in a background thread.
 ///
-/// The thread loads the ZIM library, returns the list of registered books,
-/// and then blocks forever running the kiwix server.
-fn start_internal_kiwix_server(path: &str, bind: &str) -> std::sync::mpsc::Receiver<Vec<library::RegisteredZim>> {
-    let path = path.to_string();
+/// Takes ownership of the already populated `library`, starts the kiwix server,
+/// and signals readiness through the returned channel.
+fn start_internal_kiwix_server(
+    library: kiwix::LibraryHandle,
+    bind: &str,
+) -> std::sync::mpsc::Receiver<()> {
     let (address, port) = parse_bind(bind);
     let config = ServerConfig {
         address,
@@ -183,25 +190,23 @@ fn start_internal_kiwix_server(path: &str, bind: &str) -> std::sync::mpsc::Recei
         ip_mode: IpMode::Auto,
     };
 
-    let (registered_tx, registered_rx) = std::sync::mpsc::channel();
+    let (ready_tx, ready_rx) = std::sync::mpsc::channel();
 
     std::thread::spawn(move || {
-        let mut library = kiwix::new_library();
-        let registered = library::add_path_to_library(&mut library, &path);
-        let _ = registered_tx.send(registered);
-
+        let library = library.into_inner();
         let mut server = kiwix::new_server(library, &config);
         eprintln!("Starting internal kiwix server on {}:{}", config.address, config.port);
         if !kiwix::server_start(&mut server) {
             eprintln!("Failed to start internal kiwix server");
             return;
         }
+        let _ = ready_tx.send(());
         loop {
             std::thread::sleep(std::time::Duration::from_secs(60));
         }
     });
 
-    registered_rx
+    ready_rx
 }
 
 /// Wait until the upstream kiwix server is accepting HTTP connections.
