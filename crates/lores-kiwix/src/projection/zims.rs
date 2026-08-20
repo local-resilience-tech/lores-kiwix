@@ -2,7 +2,7 @@ use lores_kiwix_node::operations::ZimRegisteredDataV1;
 use sqlx::{FromRow, SqlitePool};
 
 /// A row from the `zims` projection table.
-#[derive(Debug, FromRow, Default)]
+#[derive(Debug, Clone, FromRow, Default)]
 #[allow(dead_code)]
 pub struct Zim {
     pub id: String,

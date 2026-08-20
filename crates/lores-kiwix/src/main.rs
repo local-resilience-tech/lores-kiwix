@@ -89,9 +89,7 @@ async fn main() {
         .map(|s| s.to_string())
         .unwrap_or_else(|| "0.0.0.0:8080".to_string());
 
-    server_ready
-        .recv()
-        .expect("internal kiwix server did not report ready");
+    server_ready.recv().expect("internal kiwix server did not report ready");
     wait_for_upstream(&upstream).await;
 
     let app = proxy::app(&upstream, projection_pool, shared_library);
@@ -180,10 +178,7 @@ fn find_available_bind(requested: &str, fallback_count: usize) -> Option<String>
 ///
 /// Takes ownership of the already populated `library`, starts the kiwix server,
 /// and signals readiness through the returned channel.
-fn start_internal_kiwix_server(
-    library: kiwix::LibraryHandle,
-    bind: &str,
-) -> std::sync::mpsc::Receiver<()> {
+fn start_internal_kiwix_server(library: kiwix::LibraryHandle, bind: &str) -> std::sync::mpsc::Receiver<()> {
     let (address, port) = parse_bind(bind);
     let config = ServerConfig {
         address,
