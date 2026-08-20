@@ -20,18 +20,19 @@ pub async fn handler(State(state): State<ApiState>, req: Request) -> Response {
     let raw_query = req.uri().query().unwrap_or("");
     let params = CatalogParams::parse(raw_query);
 
+    let filter = match params.build_filter() {
+        Some(filter) => filter,
+        None => {
+            return proxy_error(StatusCode::BAD_REQUEST, "failed to build catalog filter");
+        }
+    };
+
     // Gather all synchronous libkiwix work before the first await so that the
     // `Element` tree (which uses `Rc` and is not `Send`) is constructed after
     // the last await point.
     let (total, start, page_metadata) = {
         // The lock guard must not be held across an await point. Keep all
         // libkiwix work inside this synchronous block.
-        let filter = match params.build_filter() {
-            Some(filter) => filter,
-            None => {
-                return proxy_error(StatusCode::BAD_REQUEST, "failed to build catalog filter");
-            }
-        };
         let mut library = state.library.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
         let book_ids = libkiwix_rust::library_filter(&mut library, &filter);
 
