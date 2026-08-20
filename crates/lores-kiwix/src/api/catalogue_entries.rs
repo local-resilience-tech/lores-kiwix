@@ -30,7 +30,7 @@ pub async fn handler(State(state): State<ApiState>, req: Request) -> Response {
     // Gather all synchronous libkiwix work before the first await so that the
     // `Element` tree (which uses `Rc` and is not `Send`) is constructed after
     // the last await point.
-    let (total, start, page_metadata) = {
+    let (total, start, page_metadata, book_ids) = {
         // The lock guard must not be held across an await point. Keep all
         // libkiwix work inside this synchronous block.
         let mut library = state.library.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
@@ -39,18 +39,20 @@ pub async fn handler(State(state): State<ApiState>, req: Request) -> Response {
         let page = params.paginator.page(&book_ids);
         let page_metadata = fetch_page_metadata(&mut library, page.items);
 
-        (page.total, page.start, page_metadata)
+        (page.total, page.start, page_metadata, book_ids)
     };
 
     let extra_zims = zims::list_zims(&state.pool).await.unwrap_or_default();
+    let unique_extra_zims = filter_duplicate_zims(&extra_zims, &book_ids);
 
-    let mut feed = build_feed_root(raw_query, total, start, page_metadata.len());
+    let total_results = total + unique_extra_zims.len();
+    let mut feed = build_feed_root(raw_query, total_results, start, page_metadata.len());
 
     for metadata in &page_metadata {
         feed.append_child(build_entry_from_metadata(metadata, ATOM_NS, &feed));
     }
 
-    for zim in &extra_zims {
+    for zim in &unique_extra_zims {
         feed.append_child(build_entry(zim, ATOM_NS, &feed));
     }
 
@@ -68,10 +70,7 @@ pub async fn handler(State(state): State<ApiState>, req: Request) -> Response {
 }
 
 /// Fetch metadata for each book ID in `page` while holding the library lock.
-fn fetch_page_metadata(
-    library: &mut libkiwix_rust::Library,
-    page: &[String],
-) -> Vec<libkiwix_rust::BookMetadata> {
+fn fetch_page_metadata(library: &mut libkiwix_rust::Library, page: &[String]) -> Vec<libkiwix_rust::BookMetadata> {
     let mut page_metadata = Vec::with_capacity(page.len());
     for id in page {
         if let Some(metadata) = libkiwix_rust::library_get_book_metadata(library, id) {
@@ -79,6 +78,12 @@ fn fetch_page_metadata(
         }
     }
     page_metadata
+}
+
+/// Return the extra ZIMs whose IDs do not already appear in the libkiwix results.
+fn filter_duplicate_zims<'a>(extra_zims: &'a [zims::Zim], book_ids: &[String]) -> Vec<&'a zims::Zim> {
+    let ids: std::collections::HashSet<&str> = book_ids.iter().map(|id| id.as_str()).collect();
+    extra_zims.iter().filter(|zim| !ids.contains(zim.id.as_str())).collect()
 }
 
 /// Parsed query parameters for the entries endpoint.
@@ -108,7 +113,9 @@ impl CatalogParams {
                 "notag" => params.notag = Some(value.into_owned()),
                 "maxsize" => params.max_size = value.parse().ok(),
                 "start" => params.paginator = Paginator::new(value.parse().ok(), params.paginator.count()),
-                "count" => params.paginator = Paginator::new(params.paginator.start(), Some(value.parse().ok().unwrap_or(0))),
+                "count" => {
+                    params.paginator = Paginator::new(params.paginator.start(), Some(value.parse().ok().unwrap_or(0)))
+                }
                 _ => {}
             }
         }
