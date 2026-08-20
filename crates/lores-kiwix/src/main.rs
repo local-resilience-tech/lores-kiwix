@@ -9,6 +9,7 @@ mod events;
 mod library;
 mod projection;
 mod proxy;
+mod utilities;
 mod xml;
 
 const PANDA_GRPC_ADDR_ENV: &str = "PANDA_GRPC_ADDR";

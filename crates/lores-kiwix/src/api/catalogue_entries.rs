@@ -7,10 +7,9 @@ use axum::{
 use libkiwix_rust::Filter;
 
 use crate::projection::zims;
+use crate::utilities::pagination::Paginator;
 use crate::xml::atom::{ATOM_NS, build_entry, build_entry_from_metadata, build_feed_root};
 use crate::{api::ApiState, proxy::proxy_error};
-
-const DEFAULT_COUNT: i64 = 10;
 
 /// Serve the `/catalog/v2/entries` endpoint directly from the local libkiwix
 /// library instead of proxying to the upstream kiwix server.
@@ -36,25 +35,16 @@ pub async fn handler(State(state): State<ApiState>, req: Request) -> Response {
         let mut library = state.library.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
         let book_ids = libkiwix_rust::library_filter(&mut library, &filter);
 
-        let total = book_ids.len();
-        let start = params.start.unwrap_or(0).min(total);
-        let count = params.count.unwrap_or(DEFAULT_COUNT);
-        let intended_count = if count < 0 {
-            total.saturating_sub(start)
-        } else {
-            count as usize
-        };
-        let end = (start + intended_count).min(total);
-        let page = &book_ids[start..end];
+        let page = params.paginator.page(&book_ids);
 
-        let mut page_metadata = Vec::with_capacity(page.len());
-        for id in page {
+        let mut page_metadata = Vec::with_capacity(page.items.len());
+        for id in page.items {
             if let Some(metadata) = libkiwix_rust::library_get_book_metadata(&mut library, id) {
                 page_metadata.push(metadata);
             }
         }
 
-        (total, start, page_metadata)
+        (page.total, page.start, page_metadata)
     };
 
     let extra_zims = zims::list_zims(&state.pool).await.unwrap_or_default();
@@ -92,8 +82,7 @@ struct CatalogParams {
     tag: Option<String>,
     notag: Option<String>,
     max_size: Option<usize>,
-    start: Option<usize>,
-    count: Option<i64>,
+    paginator: Paginator,
 }
 
 impl CatalogParams {
@@ -109,8 +98,8 @@ impl CatalogParams {
                 "tag" => params.tag = Some(value.into_owned()),
                 "notag" => params.notag = Some(value.into_owned()),
                 "maxsize" => params.max_size = value.parse().ok(),
-                "start" => params.start = value.parse().ok(),
-                "count" => params.count = value.parse().ok(),
+                "start" => params.paginator = Paginator::new(value.parse().ok(), params.paginator.count()),
+                "count" => params.paginator = Paginator::new(params.paginator.start(), Some(value.parse().ok().unwrap_or(0))),
                 _ => {}
             }
         }
@@ -161,8 +150,8 @@ mod tests {
         let params = CatalogParams::parse("q=golf&lang=eng&start=5&count=20&tag=foo;bar");
         assert_eq!(params.query, Some("golf".to_string()));
         assert_eq!(params.lang, Some("eng".to_string()));
-        assert_eq!(params.start, Some(5));
-        assert_eq!(params.count, Some(20));
+        assert_eq!(params.paginator.start(), Some(5));
+        assert_eq!(params.paginator.count(), Some(20));
         assert_eq!(params.tag, Some("foo;bar".to_string()));
     }
 
