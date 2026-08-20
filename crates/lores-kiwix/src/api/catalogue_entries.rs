@@ -19,7 +19,7 @@ const DEFAULT_COUNT: i64 = 10;
 /// from the projection database are appended after the libkiwix results.
 pub async fn handler(State(state): State<ApiState>, req: Request) -> Response {
     let raw_query = req.uri().query().unwrap_or("");
-    let params = parse_params(raw_query);
+    let params = CatalogParams::parse(raw_query);
 
     // Gather all synchronous libkiwix work before the first await so that the
     // `Element` tree (which uses `Rc` and is not `Send`) is constructed after
@@ -27,7 +27,7 @@ pub async fn handler(State(state): State<ApiState>, req: Request) -> Response {
     let (total, start, page_metadata) = {
         // The lock guard must not be held across an await point. Keep all
         // libkiwix work inside this synchronous block.
-        let filter = match build_filter(&params) {
+        let filter = match params.build_filter() {
             Some(filter) => filter,
             None => {
                 return proxy_error(StatusCode::BAD_REQUEST, "failed to build catalog filter");
@@ -96,58 +96,60 @@ struct CatalogParams {
     count: Option<i64>,
 }
 
-/// Parse the URL query string into a structured representation.
-fn parse_params(query: &str) -> CatalogParams {
-    let mut params = CatalogParams::default();
-    for (key, value) in url::form_urlencoded::parse(query.as_bytes()) {
-        match key.as_ref() {
-            "q" => params.query = Some(value.into_owned()),
-            "lang" => params.lang = Some(value.into_owned()),
-            "category" => params.category = Some(value.into_owned()),
-            "name" => params.name = Some(value.into_owned()),
-            "tag" => params.tag = Some(value.into_owned()),
-            "notag" => params.notag = Some(value.into_owned()),
-            "maxsize" => params.max_size = value.parse().ok(),
-            "start" => params.start = value.parse().ok(),
-            "count" => params.count = value.parse().ok(),
-            _ => {}
+impl CatalogParams {
+    /// Parse the URL query string into a structured representation.
+    pub fn parse(query: &str) -> Self {
+        let mut params = CatalogParams::default();
+        for (key, value) in url::form_urlencoded::parse(query.as_bytes()) {
+            match key.as_ref() {
+                "q" => params.query = Some(value.into_owned()),
+                "lang" => params.lang = Some(value.into_owned()),
+                "category" => params.category = Some(value.into_owned()),
+                "name" => params.name = Some(value.into_owned()),
+                "tag" => params.tag = Some(value.into_owned()),
+                "notag" => params.notag = Some(value.into_owned()),
+                "maxsize" => params.max_size = value.parse().ok(),
+                "start" => params.start = value.parse().ok(),
+                "count" => params.count = value.parse().ok(),
+                _ => {}
+            }
         }
-    }
-    params
-}
-
-/// Build a libkiwix `Filter` from the parsed query parameters.
-///
-/// Returns `None` if an invalid `max_size` or `count` would cause the filter to
-/// be unusable.
-fn build_filter(params: &CatalogParams) -> Option<Filter> {
-    let mut filter = Filter::new().valid(true).local(true);
-
-    if let Some(query) = &params.query {
-        filter = filter.query(query);
-    }
-    if let Some(lang) = &params.lang {
-        filter = filter.lang(lang);
-    }
-    if let Some(category) = &params.category {
-        filter = filter.category(category);
-    }
-    if let Some(name) = &params.name {
-        filter = filter.name(name);
-    }
-    if let Some(tag) = &params.tag {
-        let tags: Vec<String> = tag.split(';').map(|s| s.to_string()).collect();
-        filter = filter.accept_tags(&tags);
-    }
-    if let Some(notag) = &params.notag {
-        let tags: Vec<String> = notag.split(';').map(|s| s.to_string()).collect();
-        filter = filter.reject_tags(&tags);
-    }
-    if let Some(max_size) = params.max_size {
-        filter = filter.max_size(max_size);
+        params
     }
 
-    Some(filter)
+    /// Build a libkiwix `Filter` from the parsed query parameters.
+    ///
+    /// Returns `None` if an invalid `max_size` or `count` would cause the filter to
+    /// be unusable.
+    pub fn build_filter(&self) -> Option<Filter> {
+        let mut filter = Filter::new().valid(true).local(true);
+
+        if let Some(query) = &self.query {
+            filter = filter.query(query);
+        }
+        if let Some(lang) = &self.lang {
+            filter = filter.lang(lang);
+        }
+        if let Some(category) = &self.category {
+            filter = filter.category(category);
+        }
+        if let Some(name) = &self.name {
+            filter = filter.name(name);
+        }
+        if let Some(tag) = &self.tag {
+            let tags: Vec<String> = tag.split(';').map(|s| s.to_string()).collect();
+            filter = filter.accept_tags(&tags);
+        }
+        if let Some(notag) = &self.notag {
+            let tags: Vec<String> = notag.split(';').map(|s| s.to_string()).collect();
+            filter = filter.reject_tags(&tags);
+        }
+        if let Some(max_size) = self.max_size {
+            filter = filter.max_size(max_size);
+        }
+
+        Some(filter)
+    }
 }
 
 #[cfg(test)]
@@ -156,7 +158,7 @@ mod tests {
 
     #[test]
     fn parse_params_extracts_known_fields() {
-        let params = parse_params("q=golf&lang=eng&start=5&count=20&tag=foo;bar");
+        let params = CatalogParams::parse("q=golf&lang=eng&start=5&count=20&tag=foo;bar");
         assert_eq!(params.query, Some("golf".to_string()));
         assert_eq!(params.lang, Some("eng".to_string()));
         assert_eq!(params.start, Some(5));
@@ -167,6 +169,6 @@ mod tests {
     #[test]
     fn build_filter_ignores_empty_params() {
         let params = CatalogParams::default();
-        let _filter = build_filter(&params).unwrap();
+        let _filter = params.build_filter().unwrap();
     }
 }
