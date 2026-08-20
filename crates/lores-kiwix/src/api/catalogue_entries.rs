@@ -54,7 +54,7 @@ pub async fn handler(State(state): State<ApiState>, req: Request) -> Response {
 
     let total_results = book_ids.len() + unique_extra_zims.len();
     let items_per_page = page_metadata.len() + extra_page.items.len();
-    let start = params.paginator.start().unwrap_or(0).min(total_results);
+    let start = params.paginator.start_index(total_results);
     let mut feed = build_feed_root(raw_query, total_results, start, items_per_page);
 
     for metadata in &page_metadata {

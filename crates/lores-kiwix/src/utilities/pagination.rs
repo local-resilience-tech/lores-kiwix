@@ -61,6 +61,11 @@ impl Paginator {
     pub fn count(&self) -> Option<usize> {
         self.count
     }
+
+    /// Return the resolved start index for a collection of the given total size.
+    pub fn start_index(&self, total: usize) -> usize {
+        self.start.unwrap_or(0).min(total)
+    }
 }
 
 /// The result of applying a [`Paginator`] to a slice.
