@@ -4,16 +4,12 @@ use axum::{
     http::{StatusCode, header},
     response::Response,
 };
-use elementtree::Element;
 use libkiwix_rust::Filter;
 
 use crate::projection::zims;
-use crate::xml::serialize::{ATOM_NS, build_entry, build_entry_from_metadata};
+use crate::xml::atom::{ATOM_NS, build_entry, build_entry_from_metadata, build_feed_root};
 use crate::{api::ApiState, proxy::proxy_error};
 
-const DC_NS: &str = "http://purl.org/dc/terms/";
-const OPDS_NS: &str = "https://specs.opds.io/opds-1.2";
-const OPENSEARCH_NS: &str = "http://a9.com/-/spec/opensearch/1.1/";
 const DEFAULT_COUNT: i64 = 10;
 
 /// Serve the `/catalog/v2/entries` endpoint directly from the local libkiwix
@@ -152,64 +148,6 @@ fn build_filter(params: &CatalogParams) -> Option<Filter> {
     }
 
     Some(filter)
-}
-
-/// Build the root `<feed>` element for the catalog response.
-fn build_feed_root(query: &str, total: usize, start: usize, items_per_page: usize) -> Element {
-    let mut feed = Element::new((ATOM_NS, "feed"));
-    feed.register_namespace(DC_NS, Some("dc"));
-    feed.register_namespace(OPDS_NS, Some("opds"));
-    feed.register_namespace(OPENSEARCH_NS, Some("opensearch"));
-
-    let feed_id = if query.is_empty() {
-        "urn:uuid:lores-kiwix:entries".to_string()
-    } else {
-        format!("urn:uuid:lores-kiwix:entries?{}", query)
-    };
-    feed.append_new_child((ATOM_NS, "id")).set_text(feed_id);
-
-    let self_url = if query.is_empty() {
-        "/catalog/v2/entries".to_string()
-    } else {
-        format!("/catalog/v2/entries?{}", query)
-    };
-    feed.append_new_child((ATOM_NS, "link"))
-        .set_attr("rel", "self")
-        .set_attr("href", self_url)
-        .set_attr("type", "application/atom+xml;profile=opds-catalog;kind=acquisition");
-
-    feed.append_new_child((ATOM_NS, "link"))
-        .set_attr("rel", "start")
-        .set_attr("href", "/catalog/v2/root.xml")
-        .set_attr("type", "application/atom+xml;profile=opds-catalog;kind=navigation");
-
-    feed.append_new_child((ATOM_NS, "link"))
-        .set_attr("rel", "up")
-        .set_attr("href", "/catalog/v2/root.xml")
-        .set_attr("type", "application/atom+xml;profile=opds-catalog;kind=navigation");
-
-    let title = if query.is_empty() {
-        "All Entries".to_string()
-    } else {
-        format!("Filtered Entries ({})", query)
-    };
-    feed.append_new_child((ATOM_NS, "title")).set_text(title);
-
-    feed.append_new_child((ATOM_NS, "updated")).set_text(rfc3339_now());
-
-    feed.append_new_child((ATOM_NS, "totalResults"))
-        .set_text(total.to_string());
-    feed.append_new_child((ATOM_NS, "startIndex"))
-        .set_text(start.to_string());
-    feed.append_new_child((ATOM_NS, "itemsPerPage"))
-        .set_text(items_per_page.to_string());
-
-    feed
-}
-
-/// Return the current time as an RFC 3339 string.
-fn rfc3339_now() -> String {
-    chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
 }
 
 #[cfg(test)]
