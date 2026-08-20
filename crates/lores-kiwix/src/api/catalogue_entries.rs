@@ -37,10 +37,7 @@ pub async fn handler(State(state): State<ApiState>, req: Request) -> Response {
                 return proxy_error(StatusCode::BAD_REQUEST, "failed to build catalog filter");
             }
         };
-        let mut library = state
-            .library
-            .lock()
-            .unwrap_or_else(|poisoned| poisoned.into_inner());
+        let mut library = state.library.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
         let book_ids = libkiwix_rust::library_filter(&mut library, &filter);
 
         let total = book_ids.len();
