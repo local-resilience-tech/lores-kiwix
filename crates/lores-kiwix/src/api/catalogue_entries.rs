@@ -37,13 +37,7 @@ pub async fn handler(State(state): State<ApiState>, req: Request) -> Response {
         let book_ids = libkiwix_rust::library_filter(&mut library, &filter);
 
         let page = params.paginator.page(&book_ids);
-
-        let mut page_metadata = Vec::with_capacity(page.items.len());
-        for id in page.items {
-            if let Some(metadata) = libkiwix_rust::library_get_book_metadata(&mut library, id) {
-                page_metadata.push(metadata);
-            }
-        }
+        let page_metadata = fetch_page_metadata(&mut library, page.items);
 
         (page.total, page.start, page_metadata)
     };
@@ -71,6 +65,20 @@ pub async fn handler(State(state): State<ApiState>, req: Request) -> Response {
         .header(header::CONTENT_TYPE, "application/atom+xml; charset=utf-8")
         .body(Body::from(buf))
         .unwrap()
+}
+
+/// Fetch metadata for each book ID in `page` while holding the library lock.
+fn fetch_page_metadata(
+    library: &mut libkiwix_rust::Library,
+    page: &[String],
+) -> Vec<libkiwix_rust::BookMetadata> {
+    let mut page_metadata = Vec::with_capacity(page.len());
+    for id in page {
+        if let Some(metadata) = libkiwix_rust::library_get_book_metadata(library, id) {
+            page_metadata.push(metadata);
+        }
+    }
+    page_metadata
 }
 
 /// Parsed query parameters for the entries endpoint.
