@@ -49,6 +49,7 @@ pub async fn handler(State(state): State<ApiState>, req: Request) -> Response {
             zims::FilterCriteria {
                 query: filter.query().as_deref(),
                 lang: filter.lang().as_deref(),
+                category: filter.category().as_deref(),
             },
         )
         .await
@@ -176,7 +177,7 @@ impl CatalogParams {
             filter = filter.with_lang(lang);
         }
         if let Some(category) = &self.category {
-            filter = filter.category(category);
+            filter = filter.with_category(category);
         }
         if let Some(name) = &self.name {
             filter = filter.name(name);

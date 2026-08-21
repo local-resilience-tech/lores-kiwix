@@ -49,7 +49,7 @@ impl Filter {
     }
 
     /// Filter by category.
-    pub fn category(mut self, category: &str) -> Self {
+    pub fn with_category(mut self, category: &str) -> Self {
         unsafe { ffi::filter_category(self.0.pin_mut_unchecked(), category) };
         self
     }
@@ -98,6 +98,16 @@ impl Filter {
     /// Return the language string set on this filter, if any.
     pub fn lang(&self) -> Option<String> {
         get_optional_string(self.has_lang(), || ffi::filter_get_lang(&self.0))
+    }
+
+    /// Return true if a category filter has been set on this filter.
+    pub fn has_category(&self) -> bool {
+        ffi::filter_has_category(&self.0)
+    }
+
+    /// Return the category string set on this filter, if any.
+    pub fn category(&self) -> Option<String> {
+        get_optional_string(self.has_category(), || ffi::filter_get_category(&self.0))
     }
 }
 
