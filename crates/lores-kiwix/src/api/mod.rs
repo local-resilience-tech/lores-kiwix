@@ -4,7 +4,7 @@ use libkiwix_rust::LibraryHandle;
 use reqwest::Client;
 use sqlx::SqlitePool;
 
-pub mod catalogue_entries;
+pub mod entries;
 
 /// Shared state passed to API route handlers.
 #[derive(Clone)]
