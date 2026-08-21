@@ -166,3 +166,11 @@ bool server_start(kiwix::Server& server) {
 void server_stop(kiwix::Server& server) {
     server.stop();
 }
+
+rust::Vec<rust::String> library_get_books_categories(const kiwix::Library& library) {
+    rust::Vec<rust::String> result;
+    for (const auto& category : library.getBooksCategories()) {
+        result.push_back(rust::String(category));
+    }
+    return result;
+}

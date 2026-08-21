@@ -78,6 +78,9 @@ mod ffi {
         /// Return the IDs of books matching the filter.
         fn library_filter(library: Pin<&mut Library>, filter: &Filter) -> Vec<String>;
 
+        /// Return the sorted list of categories present across all books in the library.
+        fn library_get_books_categories(library: &Library) -> Vec<String>;
+
         /// Set the filesystem path of a book (usually a `.zim` file).
         fn book_set_path(book: Pin<&mut Book>, path: &str);
 
@@ -154,8 +157,8 @@ mod server;
 
 pub use book::{BookIllustration, BookMetadata, book_set_path, new_book};
 pub use library::{
-    Filter, LibraryHandle, library_add_book, library_add_book_from_path, library_filter, library_get_book_metadata,
-    new_library,
+    Filter, LibraryHandle, library_add_book, library_add_book_from_path, library_filter,
+    library_get_book_metadata, library_get_books_categories, new_library,
 };
 pub use server::{IpMode, ServerConfig, new_server, server_start, server_stop};
 

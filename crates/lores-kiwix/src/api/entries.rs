@@ -125,7 +125,7 @@ fn render_result(result: CatalogueEntriesResult<'_>) -> Result<Vec<u8>, elementt
     }
 
     let mut buf = Vec::new();
-    feed.to_writer(&mut buf)?;
+    feed.to_writer_with_options(&mut buf, elementtree::WriteOptions::new().set_perform_indent(true))?;
     Ok(buf)
 }
 

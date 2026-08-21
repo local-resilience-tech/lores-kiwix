@@ -11,20 +11,19 @@ use axum_reverse_proxy::ReverseProxy;
 use libkiwix_rust::LibraryHandle;
 use sqlx::SqlitePool;
 
-use crate::api::{ApiState, entries};
+use crate::api::{ApiState, categories, entries};
 
 mod append_text;
 mod static_override;
 
 /// Build an Axum application that proxies every request to `upstream`,
-/// except for `/catalog/v2/entries`, `/skin/index.css`, and `/skin/index.js`
-/// which are handled separately so we can merge in extra data before returning
-/// them.
+/// except for routes that are specifically overwritten.
 pub fn app(upstream: impl Into<String>, pool: SqlitePool, library: Arc<Mutex<LibraryHandle>>) -> Router {
     let state = ApiState::new(upstream, pool, library);
 
     Router::new()
         .route("/catalog/v2/entries", any(entries::handler))
+        .route("/catalog/v2/categories", any(categories::handler))
         .route(
             "/skin/index.css",
             any(append_text::handler(

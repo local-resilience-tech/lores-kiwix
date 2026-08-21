@@ -31,6 +31,7 @@ bool filter_has_category(const kiwix::Filter& filter);
 rust::String filter_get_category(const kiwix::Filter& filter);
 
 rust::Vec<rust::String> library_filter(kiwix::Library& library, const kiwix::Filter& filter);
+rust::Vec<rust::String> library_get_books_categories(const kiwix::Library& library);
 
 void book_set_path(kiwix::Book& book, rust::Str path);
 bool library_add_book(kiwix::Library& library, const kiwix::Book& book);
