@@ -25,6 +25,8 @@ kiwix::Filter& filter_max_size(kiwix::Filter& filter, size_t size);
 
 bool filter_has_query(const kiwix::Filter& filter);
 rust::String filter_get_query(const kiwix::Filter& filter);
+bool filter_has_lang(const kiwix::Filter& filter);
+rust::String filter_get_lang(const kiwix::Filter& filter);
 
 rust::Vec<rust::String> library_filter(kiwix::Library& library, const kiwix::Filter& filter);
 

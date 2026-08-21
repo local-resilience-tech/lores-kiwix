@@ -68,6 +68,14 @@ rust::String filter_get_query(const kiwix::Filter& filter) {
     return rust::String(filter.getQuery());
 }
 
+bool filter_has_lang(const kiwix::Filter& filter) {
+    return filter.hasLang();
+}
+
+rust::String filter_get_lang(const kiwix::Filter& filter) {
+    return rust::String(filter.getLang());
+}
+
 rust::Vec<rust::String> library_filter(kiwix::Library& library, const kiwix::Filter& filter) {
     const auto bookIds = library.filter(filter);
     rust::Vec<rust::String> result;

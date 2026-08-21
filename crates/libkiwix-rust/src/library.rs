@@ -43,7 +43,7 @@ impl Filter {
     }
 
     /// Filter by language(s) as a comma-separated list.
-    pub fn lang(mut self, lang: &str) -> Self {
+    pub fn with_lang(mut self, lang: &str) -> Self {
         unsafe { ffi::filter_lang(self.0.pin_mut_unchecked(), lang) };
         self
     }
@@ -87,16 +87,29 @@ impl Filter {
 
     /// Return the query string set on this filter, if any.
     pub fn query(&self) -> Option<String> {
-        if self.has_query() {
-            let query = ffi::filter_get_query(&self.0);
-            if query.is_empty() {
-                None
-            } else {
-                Some(query.to_string())
-            }
-        } else {
-            None
-        }
+        get_optional_string(self.has_query(), || ffi::filter_get_query(&self.0))
+    }
+
+    /// Return true if a language filter has been set on this filter.
+    pub fn has_lang(&self) -> bool {
+        ffi::filter_has_lang(&self.0)
+    }
+
+    /// Return the language string set on this filter, if any.
+    pub fn lang(&self) -> Option<String> {
+        get_optional_string(self.has_lang(), || ffi::filter_get_lang(&self.0))
+    }
+}
+
+fn get_optional_string<F>(has_value: bool, getter: F) -> Option<String>
+where
+    F: FnOnce() -> String,
+{
+    if has_value {
+        let value = getter();
+        if value.is_empty() { None } else { Some(value) }
+    } else {
+        None
     }
 }
 

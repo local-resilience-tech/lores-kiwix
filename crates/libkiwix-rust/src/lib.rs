@@ -66,6 +66,10 @@ mod ffi {
         fn filter_has_query(filter: &Filter) -> bool;
         /// Get the filter's query string, if any.
         fn filter_get_query(filter: &Filter) -> String;
+        /// Return true if the filter has a language set.
+        fn filter_has_lang(filter: &Filter) -> bool;
+        /// Get the filter's language string, if any.
+        fn filter_get_lang(filter: &Filter) -> String;
 
         /// Return the IDs of books matching the filter.
         fn library_filter(library: Pin<&mut Library>, filter: &Filter) -> Vec<String>;
