@@ -1,3 +1,4 @@
+use libkiwix_rust::BookMetadata;
 use lores_kiwix_node::operations::ZimRegisteredDataV1;
 use sqlx::{FromRow, SqlitePool};
 
@@ -22,6 +23,34 @@ pub async fn list_zims(pool: &SqlitePool) -> Result<Vec<Zim>, sqlx::Error> {
     sqlx::query_as::<_, Zim>("SELECT * FROM zims ORDER BY title")
         .fetch_all(pool)
         .await
+}
+
+impl Into<BookMetadata> for Zim {
+    /// Convert this projection row into a libkiwix `BookMetadata` value.
+    ///
+    /// Fields that are not stored in the projection are left blank or zeroed,
+    /// so no dummy data is invented.
+    fn into(self) -> BookMetadata {
+        BookMetadata {
+            id: self.id,
+            name: self.name.unwrap_or_default(),
+            date: self.date.unwrap_or_default(),
+            flavour: self.flavour.unwrap_or_default(),
+            title: self.title.unwrap_or_default(),
+            description: self.description.unwrap_or_default(),
+            language: self.language.unwrap_or_default(),
+            creator: self.creator.unwrap_or_default(),
+            publisher: self.publisher.unwrap_or_default(),
+            category: String::new(),
+            tags: String::new(),
+            url: String::new(),
+            article_count: 0,
+            media_count: 0,
+            size: 0,
+            path_valid: false,
+            illustrations: Vec::new(),
+        }
+    }
 }
 
 pub async fn insert_zim(pool: &SqlitePool, data: &ZimRegisteredDataV1) -> Result<(), sqlx::Error> {

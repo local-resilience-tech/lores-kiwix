@@ -8,7 +8,7 @@ use libkiwix_rust::Filter;
 
 use crate::projection::zims;
 use crate::utilities::pagination::Paginator;
-use crate::xml::atom::{ATOM_NS, build_entry, build_entry_from_metadata, build_feed_root};
+use crate::xml::atom::{ATOM_NS, build_entry_from_metadata, build_feed_root};
 use crate::{api::ApiState, proxy::proxy_error};
 
 /// Serve the `/catalog/v2/entries` endpoint directly from the local libkiwix
@@ -57,12 +57,10 @@ pub async fn handler(State(state): State<ApiState>, req: Request) -> Response {
     let start = params.paginator.start_index(total_results);
     let mut feed = build_feed_root(raw_query, total_results, start, items_per_page);
 
-    for metadata in &page_metadata {
-        feed.append_child(build_entry_from_metadata(metadata, ATOM_NS, &feed));
-    }
+    let extra_metadata: Vec<libkiwix_rust::BookMetadata> = extra_page.items.iter().cloned().map(Into::into).collect();
 
-    for zim in extra_page.items {
-        feed.append_child(build_entry(zim, ATOM_NS, &feed));
+    for metadata in page_metadata.iter().chain(&extra_metadata) {
+        feed.append_child(build_entry_from_metadata(metadata, ATOM_NS, &feed));
     }
 
     let mut buf = Vec::new();

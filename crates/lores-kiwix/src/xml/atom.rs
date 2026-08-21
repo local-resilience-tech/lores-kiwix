@@ -1,55 +1,10 @@
 use elementtree::Element;
 use libkiwix_rust::BookMetadata;
 
-use crate::projection::zims::Zim;
-
 pub const ATOM_NS: &str = "http://www.w3.org/2005/Atom";
 const DC_NS: &str = "http://purl.org/dc/terms/";
 const OPDS_NS: &str = "https://specs.opds.io/opds-1.2";
 const OPENSEARCH_NS: &str = "http://a9.com/-/spec/opensearch/1.1/";
-
-pub fn build_entry(zim: &Zim, namespace: &str, feed: &Element) -> Element {
-    let mut entry = Element::new_with_namespaces((namespace, "entry"), feed);
-    entry.append_new_child((namespace, "id")).set_text(&zim.id);
-
-    if let Some(title) = &zim.title {
-        entry.append_new_child((namespace, "title")).set_text(title);
-    }
-
-    if let Some(date) = &zim.date
-        && !date.is_empty()
-    {
-        entry.append_new_child((namespace, "updated")).set_text(date);
-    }
-
-    if let Some(creator) = &zim.creator
-        && !creator.is_empty()
-    {
-        entry
-            .append_new_child((namespace, "author"))
-            .append_new_child((namespace, "name"))
-            .set_text(creator);
-    }
-
-    if let Some(description) = &zim.description
-        && !description.is_empty()
-    {
-        entry
-            .append_new_child((namespace, "content"))
-            .set_attr("type", "text/plain")
-            .set_text(description);
-    }
-
-    // Acquisition link: points back through the proxy so the kiwix frontend
-    // treats it like a local book. Remote content routing is still TODO.
-    entry
-        .append_new_child((namespace, "link"))
-        .set_attr("rel", "http://opds-spec.org/acquisition/open-access")
-        .set_attr("href", format!("/content/{}", zim.id))
-        .set_attr("type", "text/html");
-
-    entry
-}
 
 /// Build an Atom `<entry>` element from a libkiwix `BookMetadata`.
 ///
@@ -62,8 +17,14 @@ pub fn build_entry_from_metadata(meta: &BookMetadata, namespace: &str, feed: &El
         .set_text(format!("urn:uuid:{}", meta.id));
     entry.append_new_child((namespace, "title")).set_text(&meta.title);
 
-    let updated = format!("{}T00:00:00Z", meta.date);
-    entry.append_new_child((namespace, "updated")).set_text(&updated);
+    let updated = if !meta.date.is_empty() {
+        Some(format!("{}T00:00:00Z", meta.date))
+    } else {
+        None
+    };
+    if let Some(updated) = &updated {
+        entry.append_new_child((namespace, "updated")).set_text(updated);
+    }
 
     if !meta.description.is_empty() {
         entry
@@ -117,6 +78,12 @@ pub fn build_entry_from_metadata(meta: &BookMetadata, namespace: &str, feed: &El
 
     entry
         .append_new_child((namespace, "link"))
+        .set_attr("rel", "http://opds-spec.org/acquisition/open-access")
+        .set_attr("href", format!("/content/{}", meta.id))
+        .set_attr("type", "text/html");
+
+    entry
+        .append_new_child((namespace, "link"))
         .set_attr("type", "text/html")
         .set_attr("href", format!("/content/{}", meta.id));
 
@@ -134,8 +101,8 @@ pub fn build_entry_from_metadata(meta: &BookMetadata, namespace: &str, feed: &El
             .set_text(&meta.publisher);
     }
 
-    if !meta.date.is_empty() {
-        entry.append_new_child((namespace, "dc:issued")).set_text(&updated);
+    if let Some(updated) = updated {
+        entry.append_new_child((namespace, "dc:issued")).set_text(updated);
     }
 
     entry
@@ -205,19 +172,20 @@ mod tests {
 
     #[test]
     fn build_entry_renders_xml() {
-        let zim = Zim {
+        let zim = crate::projection::zims::Zim {
             id: "abc123".to_string(),
             filename: "abc123.zim".to_string(),
             date: Some("2026-06-01".to_string()),
             flavour: Some("nopic".to_string()),
-            ..Zim::default()
+            ..crate::projection::zims::Zim::default()
         };
         let feed = Element::new((ATOM_NS, "feed"));
 
-        let result = build_entry(&zim, ATOM_NS, &feed).to_string().unwrap();
+        let meta: BookMetadata = zim.into();
+        let result = build_entry_from_metadata(&meta, ATOM_NS, &feed).to_string().unwrap();
 
         assert_eq!(
-            "<?xml version=\"1.0\" encoding=\"utf-8\"?><entry><id>abc123</id><updated>2026-06-01</updated><link href=\"/content/abc123\" rel=\"http://opds-spec.org/acquisition/open-access\" type=\"text/html\" /></entry>",
+            "<?xml version=\"1.0\" encoding=\"utf-8\"?><entry><id>urn:uuid:abc123</id><title /><updated>2026-06-01T00:00:00Z</updated><flavour>nopic</flavour><link href=\"/content/abc123\" rel=\"http://opds-spec.org/acquisition/open-access\" type=\"text/html\" /><link href=\"/content/abc123\" type=\"text/html\" /><dc:issued>2026-06-01T00:00:00Z</dc:issued></entry>",
             result
         );
     }
