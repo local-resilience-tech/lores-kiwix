@@ -27,6 +27,10 @@ pub async fn handler(State(state): State<ApiState>, req: Request) -> Response {
         }
     };
 
+    // Capture the text query before the first await so it can be applied to
+    // the projection-backed extra ZIMs as well.
+    let query = filter.query();
+
     // Gather all synchronous libkiwix work before the first await so that the
     // `Element` tree (which uses `Rc` and is not `Send`) is constructed after
     // the last await point.
@@ -44,7 +48,9 @@ pub async fn handler(State(state): State<ApiState>, req: Request) -> Response {
     };
 
     let unique_extra_zims = if lib_exhausted {
-        let extra_zims = zims::list_zims(&state.pool).await.unwrap_or_default();
+        let extra_zims = zims::list_zims_filtered(&state.pool, query.as_deref())
+            .await
+            .unwrap_or_default();
         filter_duplicate_zims(&extra_zims, &book_ids)
     } else {
         vec![]
@@ -162,7 +168,7 @@ impl CatalogParams {
         let mut filter = Filter::new().valid(true).local(true);
 
         if let Some(query) = &self.query {
-            filter = filter.query(query);
+            filter = filter.with_query(query);
         }
         if let Some(lang) = &self.lang {
             filter = filter.lang(lang);

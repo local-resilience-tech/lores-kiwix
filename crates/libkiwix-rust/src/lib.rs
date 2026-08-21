@@ -62,6 +62,11 @@ mod ffi {
         /// Filter by maximum size in bytes.
         fn filter_max_size(filter: Pin<&mut Filter>, size: usize) -> Pin<&mut Filter>;
 
+        /// Return true if the filter has a query set.
+        fn filter_has_query(filter: &Filter) -> bool;
+        /// Get the filter's query string, if any.
+        fn filter_get_query(filter: &Filter) -> String;
+
         /// Return the IDs of books matching the filter.
         fn library_filter(library: Pin<&mut Library>, filter: &Filter) -> Vec<String>;
 

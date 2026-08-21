@@ -16,5 +16,6 @@ CREATE TABLE zims (
     creator     TEXT NOT NULL,
     publisher   TEXT NOT NULL,
     category    TEXT NOT NULL,
-    tags        TEXT NOT NULL
+    tags        TEXT NOT NULL,
+    query_text  TEXT NOT NULL
 );

@@ -60,6 +60,14 @@ kiwix::Filter& filter_max_size(kiwix::Filter& filter, size_t size) {
     return filter.maxSize(size);
 }
 
+bool filter_has_query(const kiwix::Filter& filter) {
+    return filter.hasQuery();
+}
+
+rust::String filter_get_query(const kiwix::Filter& filter) {
+    return rust::String(filter.getQuery());
+}
+
 rust::Vec<rust::String> library_filter(kiwix::Library& library, const kiwix::Filter& filter) {
     const auto bookIds = library.filter(filter);
     rust::Vec<rust::String> result;

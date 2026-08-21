@@ -37,7 +37,7 @@ impl Filter {
     }
 
     /// Filter by full-text query.
-    pub fn query(mut self, query: &str) -> Self {
+    pub fn with_query(mut self, query: &str) -> Self {
         unsafe { ffi::filter_query(self.0.pin_mut_unchecked(), query) };
         self
     }
@@ -78,6 +78,25 @@ impl Filter {
     pub fn max_size(mut self, size: usize) -> Self {
         unsafe { ffi::filter_max_size(self.0.pin_mut_unchecked(), size) };
         self
+    }
+
+    /// Return true if a query string has been set on this filter.
+    pub fn has_query(&self) -> bool {
+        ffi::filter_has_query(&self.0)
+    }
+
+    /// Return the query string set on this filter, if any.
+    pub fn query(&self) -> Option<String> {
+        if self.has_query() {
+            let query = ffi::filter_get_query(&self.0);
+            if query.is_empty() {
+                None
+            } else {
+                Some(query.to_string())
+            }
+        } else {
+            None
+        }
     }
 }
 
