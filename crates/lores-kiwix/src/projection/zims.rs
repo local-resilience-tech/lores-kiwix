@@ -8,14 +8,16 @@ use sqlx::{FromRow, SqlitePool};
 pub struct Zim {
     pub id: String,
     pub filename: String,
-    pub name: Option<String>,
-    pub date: Option<String>,
-    pub flavour: Option<String>,
-    pub title: Option<String>,
-    pub description: Option<String>,
-    pub language: Option<String>,
-    pub creator: Option<String>,
-    pub publisher: Option<String>,
+    pub name: String,
+    pub date: String,
+    pub flavour: String,
+    pub title: String,
+    pub description: String,
+    pub language: String,
+    pub creator: String,
+    pub publisher: String,
+    pub category: String,
+    pub tags: String,
 }
 
 /// Return every ZIM recorded in the projection database.
@@ -33,16 +35,16 @@ impl Into<BookMetadata> for Zim {
     fn into(self) -> BookMetadata {
         BookMetadata {
             id: self.id,
-            name: self.name.unwrap_or_default(),
-            date: self.date.unwrap_or_default(),
-            flavour: self.flavour.unwrap_or_default(),
-            title: self.title.unwrap_or_default(),
-            description: self.description.unwrap_or_default(),
-            language: self.language.unwrap_or_default(),
-            creator: self.creator.unwrap_or_default(),
-            publisher: self.publisher.unwrap_or_default(),
-            category: String::new(),
-            tags: String::new(),
+            name: self.name,
+            date: self.date,
+            flavour: self.flavour,
+            title: self.title,
+            description: self.description,
+            language: self.language,
+            creator: self.creator,
+            publisher: self.publisher,
+            category: self.category,
+            tags: self.tags,
             url: String::new(),
             article_count: 0,
             media_count: 0,
@@ -65,8 +67,10 @@ pub async fn insert_zim(pool: &SqlitePool, data: &ZimRegisteredDataV1) -> Result
             description,
             language,
             creator,
-            publisher
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            publisher,
+            category,
+            tags
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     )
     .bind(&data.book_id)
     .bind(&data.filename)
@@ -78,6 +82,8 @@ pub async fn insert_zim(pool: &SqlitePool, data: &ZimRegisteredDataV1) -> Result
     .bind(&data.language)
     .bind(&data.creator)
     .bind(&data.publisher)
+    .bind(&data.category)
+    .bind(&data.tags)
     .execute(pool)
     .await?;
 

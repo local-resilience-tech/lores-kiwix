@@ -18,6 +18,8 @@ pub struct ZimRegisteredDataV1 {
     pub language: String,
     pub creator: String,
     pub publisher: String,
+    pub category: String,
+    pub tags: String,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
