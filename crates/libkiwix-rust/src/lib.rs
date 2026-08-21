@@ -5,6 +5,15 @@
 
 #[cxx::bridge]
 mod ffi {
+    /// Information about a book illustration.
+    #[derive(Debug, Clone)]
+    pub struct BookIllustration {
+        pub width: u16,
+        pub height: u16,
+        pub mime_type: String,
+        pub url: String,
+    }
+
     unsafe extern "C++" {
         include!("src/bridge.h");
 
@@ -16,6 +25,10 @@ mod ffi {
         #[namespace = "kiwix"]
         type Library;
 
+        /// Opaque handle to a `kiwix::Filter`.
+        #[namespace = "kiwix"]
+        type Filter;
+
         /// Opaque handle to a `kiwix::Server`.
         #[namespace = "kiwix"]
         type Server;
@@ -25,6 +38,32 @@ mod ffi {
 
         /// Create a new, empty `kiwix::Book`.
         fn create_book() -> SharedPtr<Book>;
+
+        /// Create a new, empty `kiwix::Filter`.
+        fn create_filter() -> SharedPtr<Filter>;
+        /// Include only valid books in the filter.
+        fn filter_valid(filter: Pin<&mut Filter>, accept: bool) -> Pin<&mut Filter>;
+        /// Include only local books in the filter.
+        fn filter_local(filter: Pin<&mut Filter>, accept: bool) -> Pin<&mut Filter>;
+        /// Include only remote books in the filter.
+        fn filter_remote(filter: Pin<&mut Filter>, accept: bool) -> Pin<&mut Filter>;
+        /// Filter by full-text query.
+        fn filter_query<'a>(filter: Pin<&'a mut Filter>, query: &str) -> Pin<&'a mut Filter>;
+        /// Filter by language(s) as a comma-separated list.
+        fn filter_lang<'a>(filter: Pin<&'a mut Filter>, lang: &str) -> Pin<&'a mut Filter>;
+        /// Filter by category.
+        fn filter_category<'a>(filter: Pin<&'a mut Filter>, category: &str) -> Pin<&'a mut Filter>;
+        /// Filter by book name.
+        fn filter_name<'a>(filter: Pin<&'a mut Filter>, name: &str) -> Pin<&'a mut Filter>;
+        /// Filter by accepted tags.
+        fn filter_accept_tags<'a>(filter: Pin<&'a mut Filter>, tags: &Vec<String>) -> Pin<&'a mut Filter>;
+        /// Filter by rejected tags.
+        fn filter_reject_tags<'a>(filter: Pin<&'a mut Filter>, tags: &Vec<String>) -> Pin<&'a mut Filter>;
+        /// Filter by maximum size in bytes.
+        fn filter_max_size(filter: Pin<&mut Filter>, size: usize) -> Pin<&mut Filter>;
+
+        /// Return the IDs of books matching the filter.
+        fn library_filter(library: Pin<&mut Library>, filter: &Filter) -> Vec<String>;
 
         /// Set the filesystem path of a book (usually a `.zim` file).
         fn book_set_path(book: Pin<&mut Book>, path: &str);
@@ -58,6 +97,23 @@ mod ffi {
         fn book_get_creator(book: &Book) -> String;
         /// Get the archive publisher.
         fn book_get_publisher(book: &Book) -> String;
+        /// Get the archive category.
+        fn book_get_category(book: &Book) -> String;
+        /// Get the archive tags string.
+        fn book_get_tags(book: &Book) -> String;
+        /// Get the archive remote URL, if any.
+        fn book_get_url(book: &Book) -> String;
+        /// Get the number of articles in the archive.
+        fn book_get_article_count(book: &Book) -> u64;
+        /// Get the number of media files in the archive.
+        fn book_get_media_count(book: &Book) -> u64;
+        /// Get the archive size in bytes.
+        fn book_get_size(book: &Book) -> u64;
+        /// Return true if the archive path is valid.
+        fn book_is_path_valid(book: &Book) -> bool;
+
+        /// Get the list of illustrations for the book.
+        fn book_get_illustrations(book: &Book) -> Vec<BookIllustration>;
 
         /// Create a server for the given library.
         fn create_server(library: SharedPtr<Library>) -> SharedPtr<Server>;
@@ -79,145 +135,25 @@ mod ffi {
     }
 }
 
-/// Create a new, empty Kiwix library.
-pub fn new_library() -> Library {
-    ffi::create_library()
-}
+mod book;
+mod library;
+mod server;
 
-/// Create a new, empty book.
-pub fn new_book() -> cxx::SharedPtr<ffi::Book> {
-    ffi::create_book()
-}
-
-/// Set the filesystem path of a book.
-pub fn book_set_path(book: &mut cxx::SharedPtr<ffi::Book>, path: &str) {
-    // SAFETY: `Book` is an opaque C++ type; `setPath` is a non-const member
-    // function and `pin_mut_unchecked` is documented as safe for this case.
-    unsafe { ffi::book_set_path(book.pin_mut_unchecked(), path) };
-}
-
-/// Add a book to a library.
-pub fn library_add_book(library: &mut Library, book: &cxx::SharedPtr<ffi::Book>) -> bool {
-    // SAFETY: `Library` is an opaque C++ type; `addBook` is thread-safe for
-    // opaque types per the CXX `pin_mut_unchecked` documentation.
-    unsafe { ffi::library_add_book(library.pin_mut_unchecked(), book.as_ref().unwrap()) }
-}
-
-/// Add a book to a library by opening the ZIM file at `path`.
-///
-/// Returns the book ID on success, or `None` if libkiwix could not read the
-/// file or rejected it.
-pub fn library_add_book_from_path(library: &mut Library, path: &str) -> Option<String> {
-    // SAFETY: `Library` is an opaque C++ type; `addBookFromPathAndGetId` is a
-    // non-const member function documented as safe via `pin_mut_unchecked`.
-    let id = unsafe { ffi::library_add_book_from_path(library.pin_mut_unchecked(), path) };
-    if id.is_empty() { None } else { Some(id.to_string()) }
-}
-
-/// Metadata extracted from a ZIM archive.
-#[derive(Debug, Clone)]
-pub struct BookMetadata {
-    pub id: String,
-    pub name: String,
-    pub date: String,
-    pub flavour: String,
-    pub title: String,
-    pub description: String,
-    pub language: String,
-    pub creator: String,
-    pub publisher: String,
-}
-
-/// Look up a book by ID and return its metadata.
-///
-/// Returns `None` if no book with the given ID exists in the library.
-pub fn library_get_book_metadata(library: &mut Library, id: &str) -> Option<BookMetadata> {
-    // SAFETY: `Library` is an opaque C++ type; `getBookByIdThreadSafe` is
-    // invoked through a bridge function documented as safe via `pin_mut_unchecked`.
-    let book = unsafe { ffi::library_get_book_by_id(library.pin_mut_unchecked(), id) };
-    if book.is_null() {
-        return None;
-    }
-    Some(BookMetadata {
-        id: ffi::book_get_id(book.as_ref().unwrap()),
-        name: ffi::book_get_name(book.as_ref().unwrap()),
-        date: ffi::book_get_date(book.as_ref().unwrap()),
-        flavour: ffi::book_get_flavour(book.as_ref().unwrap()),
-        title: ffi::book_get_title(book.as_ref().unwrap()),
-        description: ffi::book_get_description(book.as_ref().unwrap()),
-        language: ffi::book_get_language(book.as_ref().unwrap()),
-        creator: ffi::book_get_creator(book.as_ref().unwrap()),
-        publisher: ffi::book_get_publisher(book.as_ref().unwrap()),
-    })
-}
-
-/// Server address configuration.
-#[derive(Debug, Clone)]
-pub struct ServerConfig {
-    pub address: String,
-    pub port: i32,
-    pub ip_mode: IpMode,
-}
-
-impl Default for ServerConfig {
-    fn default() -> Self {
-        Self {
-            address: "0.0.0.0".into(),
-            port: 8080,
-            ip_mode: IpMode::Auto,
-        }
-    }
-}
+pub use book::{BookIllustration, BookMetadata, book_set_path, new_book};
+pub use library::{
+    Filter, LibraryHandle, library_add_book, library_add_book_from_path, library_filter, library_get_book_metadata,
+    new_library,
+};
+pub use server::{IpMode, ServerConfig, new_server, server_start, server_stop};
 
 /// Handle to a `kiwix::Library`.
 pub type Library = cxx::SharedPtr<ffi::Library>;
 /// Handle to a `kiwix::Server`.
 pub type Server = cxx::SharedPtr<ffi::Server>;
 
-/// IP protocol selection for the server.
-#[repr(i32)]
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub enum IpMode {
-    Ipv4 = 0,
-    Ipv6 = 1,
-    All = 2,
-    Auto = 3,
-}
-
-impl IpMode {
-    fn as_i32(self) -> i32 {
-        self as i32
-    }
-}
-
-/// Create and configure a Kiwix server.
-pub fn new_server(library: Library, config: &ServerConfig) -> Server {
-    let mut server = ffi::create_server(library);
-    // SAFETY: `Server` is an opaque C++ type; these setters are non-const
-    // member functions documented as safe to call via `pin_mut_unchecked`.
-    unsafe {
-        ffi::server_set_address(server.pin_mut_unchecked(), &config.address);
-        ffi::server_set_port(server.pin_mut_unchecked(), config.port);
-        ffi::server_set_ip_mode(server.pin_mut_unchecked(), config.ip_mode.as_i32());
-    }
-    server
-}
-
-/// Start the server.
-pub fn server_start(server: &mut Server) -> bool {
-    // SAFETY: `Server` is an opaque C++ type; `start` is a non-const member.
-    unsafe { ffi::server_start(server.pin_mut_unchecked()) }
-}
-
-/// Stop the server.
-pub fn server_stop(server: &mut Server) {
-    // SAFETY: `Server` is an opaque C++ type; `stop` is a non-const member.
-    unsafe { ffi::server_stop(server.pin_mut_unchecked()) };
-}
-
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::new_library;
 
     #[test]
     fn can_create_library() {
