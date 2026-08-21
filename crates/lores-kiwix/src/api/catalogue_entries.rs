@@ -52,28 +52,29 @@ pub async fn handler(State(state): State<ApiState>, req: Request) -> Response {
 
     let extra_page = params.paginator.tail(book_ids.len()).page(&unique_extra_zims);
 
-    let total_results = book_ids.len() + unique_extra_zims.len();
-    let items_per_page = page_metadata.len() + extra_page.items.len();
-    let start = params.paginator.start_index(total_results);
-    let mut feed = build_feed_root(raw_query, total_results, start, items_per_page);
+    let result = CatalogueEntriesResult {
+        entries: page_metadata
+            .iter()
+            .chain(&extra_page.items.iter().cloned().map(Into::into).collect::<Vec<_>>())
+            .cloned()
+            .collect(),
+        total: book_ids.len() + unique_extra_zims.len(),
+        start: params.paginator.start_index(book_ids.len() + unique_extra_zims.len()),
+        items_per_page: page_metadata.len() + extra_page.items.len(),
+        query: raw_query,
+    };
 
-    let extra_metadata: Vec<libkiwix_rust::BookMetadata> = extra_page.items.iter().cloned().map(Into::into).collect();
-
-    for metadata in page_metadata.iter().chain(&extra_metadata) {
-        feed.append_child(build_entry_from_metadata(metadata, ATOM_NS, &feed));
+    match render_result(result) {
+        Ok(buf) => Response::builder()
+            .status(StatusCode::OK)
+            .header(header::CONTENT_TYPE, "application/atom+xml; charset=utf-8")
+            .body(Body::from(buf))
+            .unwrap(),
+        Err(err) => {
+            tracing::error!(error = %err, "failed to serialize catalog feed");
+            proxy_error(StatusCode::INTERNAL_SERVER_ERROR, "failed to serialize catalog feed")
+        }
     }
-
-    let mut buf = Vec::new();
-    if let Err(err) = feed.to_writer(&mut buf) {
-        tracing::error!(error = %err, "failed to serialize catalog feed");
-        return proxy_error(StatusCode::INTERNAL_SERVER_ERROR, "failed to serialize catalog feed");
-    }
-
-    Response::builder()
-        .status(StatusCode::OK)
-        .header(header::CONTENT_TYPE, "application/atom+xml; charset=utf-8")
-        .body(Body::from(buf))
-        .unwrap()
 }
 
 /// Fetch metadata for each book ID in `page` while holding the library lock.
@@ -95,6 +96,28 @@ fn filter_duplicate_zims(extra_zims: &[zims::Zim], book_ids: &[String]) -> Vec<z
         .filter(|zim| !ids.contains(zim.id.as_str()))
         .cloned()
         .collect()
+}
+
+/// Result of collecting and paginating entries for the catalog response.
+struct CatalogueEntriesResult<'a> {
+    entries: Vec<libkiwix_rust::BookMetadata>,
+    total: usize,
+    start: usize,
+    items_per_page: usize,
+    query: &'a str,
+}
+
+/// Render a `CatalogueEntriesResult` into an Atom feed byte buffer.
+fn render_result(result: CatalogueEntriesResult<'_>) -> Result<Vec<u8>, elementtree::Error> {
+    let mut feed = build_feed_root(result.query, result.total, result.start, result.items_per_page);
+
+    for metadata in &result.entries {
+        feed.append_child(build_entry_from_metadata(metadata, ATOM_NS, &feed));
+    }
+
+    let mut buf = Vec::new();
+    feed.to_writer(&mut buf)?;
+    Ok(buf)
 }
 
 /// Parsed query parameters for the entries endpoint.
