@@ -23,6 +23,13 @@ kiwix::Filter& filter_accept_tags(kiwix::Filter& filter, const rust::Vec<rust::S
 kiwix::Filter& filter_reject_tags(kiwix::Filter& filter, const rust::Vec<rust::String>& tags);
 kiwix::Filter& filter_max_size(kiwix::Filter& filter, size_t size);
 
+bool filter_has_query(const kiwix::Filter& filter);
+rust::String filter_get_query(const kiwix::Filter& filter);
+bool filter_has_lang(const kiwix::Filter& filter);
+rust::String filter_get_lang(const kiwix::Filter& filter);
+bool filter_has_category(const kiwix::Filter& filter);
+rust::String filter_get_category(const kiwix::Filter& filter);
+
 rust::Vec<rust::String> library_filter(kiwix::Library& library, const kiwix::Filter& filter);
 
 void book_set_path(kiwix::Book& book, rust::Str path);

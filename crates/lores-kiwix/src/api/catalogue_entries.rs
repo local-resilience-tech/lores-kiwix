@@ -44,7 +44,16 @@ pub async fn handler(State(state): State<ApiState>, req: Request) -> Response {
     };
 
     let unique_extra_zims = if lib_exhausted {
-        let extra_zims = zims::list_zims(&state.pool).await.unwrap_or_default();
+        let extra_zims = zims::list_zims_filtered(
+            &state.pool,
+            zims::FilterCriteria {
+                query: filter.query().as_deref(),
+                lang: filter.lang().as_deref(),
+                category: filter.category().as_deref(),
+            },
+        )
+        .await
+        .unwrap_or_default();
         filter_duplicate_zims(&extra_zims, &book_ids)
     } else {
         vec![]
@@ -162,13 +171,13 @@ impl CatalogParams {
         let mut filter = Filter::new().valid(true).local(true);
 
         if let Some(query) = &self.query {
-            filter = filter.query(query);
+            filter = filter.with_query(query);
         }
         if let Some(lang) = &self.lang {
-            filter = filter.lang(lang);
+            filter = filter.with_lang(lang);
         }
         if let Some(category) = &self.category {
-            filter = filter.category(category);
+            filter = filter.with_category(category);
         }
         if let Some(name) = &self.name {
             filter = filter.name(name);

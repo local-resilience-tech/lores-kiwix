@@ -175,8 +175,8 @@ mod tests {
         let zim = crate::projection::zims::Zim {
             id: "abc123".to_string(),
             filename: "abc123.zim".to_string(),
-            date: Some("2026-06-01".to_string()),
-            flavour: Some("nopic".to_string()),
+            date: "2026-06-01".to_string(),
+            flavour: "nopic".to_string(),
             ..crate::projection::zims::Zim::default()
         };
         let feed = Element::new((ATOM_NS, "feed"));

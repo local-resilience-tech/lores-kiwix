@@ -2,7 +2,7 @@ use std::env;
 use std::sync::{Arc, Mutex};
 
 use libkiwix_rust::{self as kiwix, IpMode, ServerConfig};
-use lores_kiwix_node::operations::{AppOperation, ZimRegisteredDataV1};
+use lores_kiwix_node::operations::AppOperation;
 
 mod api;
 mod events;
@@ -61,24 +61,10 @@ async fn main() {
     let _ = ready_rx.changed().await;
 
     for zim in &registered {
-        let filename = std::path::Path::new(&zim.path)
-            .file_name()
-            .and_then(|n| n.to_str())
-            .unwrap_or(&zim.path)
-            .to_string();
-        let meta = &zim.metadata;
-        let op = AppOperation::ZimRegisteredV1(ZimRegisteredDataV1 {
-            filename,
-            book_id: meta.id.clone(),
-            name: meta.name.clone(),
-            date: meta.date.clone(),
-            flavour: meta.flavour.clone(),
-            title: meta.title.clone(),
-            description: meta.description.clone(),
-            language: meta.language.clone(),
-            creator: meta.creator.clone(),
-            publisher: meta.publisher.clone(),
-        });
+        let op = AppOperation::ZimRegisteredV1(utilities::zim::registered_data_from_path_and_metadata(
+            &zim.path,
+            &zim.metadata,
+        ));
         if let Err(e) = node.publish(&op).await {
             eprintln!("Failed to publish ZimRegisteredV1 for {}: {}", zim.path, e);
         }

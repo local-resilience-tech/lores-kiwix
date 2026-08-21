@@ -7,12 +7,15 @@
 CREATE TABLE zims (
     id          TEXT PRIMARY KEY NOT NULL,
     filename    TEXT NOT NULL,
-    name        TEXT,
-    date        TEXT,
-    flavour     TEXT,
-    title       TEXT,
-    description TEXT,
-    language    TEXT,
-    creator     TEXT,
-    publisher   TEXT
+    name        TEXT NOT NULL,
+    date        TEXT NOT NULL,
+    flavour     TEXT NOT NULL,
+    title       TEXT NOT NULL,
+    description TEXT NOT NULL,
+    language    TEXT NOT NULL,
+    creator     TEXT NOT NULL,
+    publisher   TEXT NOT NULL,
+    category    TEXT NOT NULL,
+    tags        TEXT NOT NULL,
+    query_text  TEXT NOT NULL
 );

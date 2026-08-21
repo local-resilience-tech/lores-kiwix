@@ -37,19 +37,19 @@ impl Filter {
     }
 
     /// Filter by full-text query.
-    pub fn query(mut self, query: &str) -> Self {
+    pub fn with_query(mut self, query: &str) -> Self {
         unsafe { ffi::filter_query(self.0.pin_mut_unchecked(), query) };
         self
     }
 
     /// Filter by language(s) as a comma-separated list.
-    pub fn lang(mut self, lang: &str) -> Self {
+    pub fn with_lang(mut self, lang: &str) -> Self {
         unsafe { ffi::filter_lang(self.0.pin_mut_unchecked(), lang) };
         self
     }
 
     /// Filter by category.
-    pub fn category(mut self, category: &str) -> Self {
+    pub fn with_category(mut self, category: &str) -> Self {
         unsafe { ffi::filter_category(self.0.pin_mut_unchecked(), category) };
         self
     }
@@ -78,6 +78,48 @@ impl Filter {
     pub fn max_size(mut self, size: usize) -> Self {
         unsafe { ffi::filter_max_size(self.0.pin_mut_unchecked(), size) };
         self
+    }
+
+    /// Return true if a query string has been set on this filter.
+    pub fn has_query(&self) -> bool {
+        ffi::filter_has_query(&self.0)
+    }
+
+    /// Return the query string set on this filter, if any.
+    pub fn query(&self) -> Option<String> {
+        get_optional_string(self.has_query(), || ffi::filter_get_query(&self.0))
+    }
+
+    /// Return true if a language filter has been set on this filter.
+    pub fn has_lang(&self) -> bool {
+        ffi::filter_has_lang(&self.0)
+    }
+
+    /// Return the language string set on this filter, if any.
+    pub fn lang(&self) -> Option<String> {
+        get_optional_string(self.has_lang(), || ffi::filter_get_lang(&self.0))
+    }
+
+    /// Return true if a category filter has been set on this filter.
+    pub fn has_category(&self) -> bool {
+        ffi::filter_has_category(&self.0)
+    }
+
+    /// Return the category string set on this filter, if any.
+    pub fn category(&self) -> Option<String> {
+        get_optional_string(self.has_category(), || ffi::filter_get_category(&self.0))
+    }
+}
+
+fn get_optional_string<F>(has_value: bool, getter: F) -> Option<String>
+where
+    F: FnOnce() -> String,
+{
+    if has_value {
+        let value = getter();
+        if value.is_empty() { None } else { Some(value) }
+    } else {
+        None
     }
 }
 
