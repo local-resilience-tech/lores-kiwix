@@ -1,6 +1,6 @@
 use elementtree::Element;
 
-use super::{ATOM_NS, OPDS_NS};
+use super::{ATOM_NS, OPDS_NS, rfc3339_now, url_encode};
 
 /// Build the root `<feed>` element for the categories navigation feed.
 pub fn build_feed_root() -> Element {
@@ -42,12 +42,4 @@ pub fn build_category(category: &str, feed: &Element) -> Element {
         .set_attr("type", "text")
         .set_text(format!("All entries with category of '{}'.", category));
     entry
-}
-
-fn url_encode(s: &str) -> String {
-    url::form_urlencoded::byte_serialize(s.as_bytes()).collect()
-}
-
-fn rfc3339_now() -> String {
-    chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
 }

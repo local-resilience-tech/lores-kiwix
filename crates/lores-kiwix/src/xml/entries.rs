@@ -1,7 +1,7 @@
 use elementtree::Element;
 use libkiwix_rust::BookMetadata;
 
-use super::{ATOM_NS, DC_NS, OPDS_NS, OPENSEARCH_NS};
+use super::{ATOM_NS, DC_NS, OPDS_NS, OPENSEARCH_NS, rfc3339_now};
 
 /// Build an Atom `<entry>` element from a libkiwix `BookMetadata`.
 ///
@@ -154,11 +154,6 @@ pub fn build_feed_root(query: &str, total: usize, start: usize, items_per_page: 
         .set_text(items_per_page.to_string());
 
     feed
-}
-
-/// Return the current time as an RFC 3339 string.
-fn rfc3339_now() -> String {
-    chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
 }
 
 #[cfg(test)]
