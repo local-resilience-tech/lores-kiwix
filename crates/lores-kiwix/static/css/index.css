@@ -1,3 +1,4 @@
-div.book__wrapper {
+div.book__wrapper.source-remote {
   border-color: red;
+  border-style: dashed;
 }
