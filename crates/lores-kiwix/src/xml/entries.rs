@@ -7,7 +7,7 @@ use super::{ATOM_NS, DC_NS, OPDS_NS, OPENSEARCH_NS};
 ///
 /// This mirrors the libkiwix `catalog_v2_entry.xml` mustache template as
 /// closely as possible.
-pub fn build_entry_from_metadata(meta: &BookMetadata, feed: &Element) -> Element {
+pub fn build_entry(meta: &BookMetadata, feed: &Element) -> Element {
     let mut entry = Element::new_with_namespaces((ATOM_NS, "entry"), feed);
     entry
         .append_new_child((ATOM_NS, "id"))
@@ -177,7 +177,7 @@ mod tests {
         let feed = Element::new((ATOM_NS, "feed"));
 
         let meta: BookMetadata = zim.into();
-        let result = build_entry_from_metadata(&meta, &feed).to_string().unwrap();
+        let result = build_entry(&meta, &feed).to_string().unwrap();
 
         assert_eq!(
             "<?xml version=\"1.0\" encoding=\"utf-8\"?><entry><id>urn:uuid:abc123</id><title /><updated>2026-06-01T00:00:00Z</updated><flavour>nopic</flavour><link href=\"/content/abc123\" rel=\"http://opds-spec.org/acquisition/open-access\" type=\"text/html\" /><link href=\"/content/abc123\" type=\"text/html\" /><dc:issued>2026-06-01T00:00:00Z</dc:issued></entry>",
