@@ -15,3 +15,7 @@ sqlx = { workspace = true, features = ["derive"] }
 url = "2"
 tokio = { workspace = true, features = ["full"] }
 tracing = "0.1"
+
+[dev-dependencies]
+indoc = "2"
+pretty_assertions = "1"

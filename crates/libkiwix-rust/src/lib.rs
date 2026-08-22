@@ -14,6 +14,14 @@ mod ffi {
         pub url: String,
     }
 
+    /// A language present in the library, with its book count.
+    #[derive(Debug, Clone)]
+    pub struct LanguageEntry {
+        pub lang_code: String,
+        pub lang_name: String,
+        pub book_count: u32,
+    }
+
     unsafe extern "C++" {
         include!("src/bridge.h");
 
@@ -78,6 +86,12 @@ mod ffi {
         /// Return the IDs of books matching the filter.
         fn library_filter(library: Pin<&mut Library>, filter: &Filter) -> Vec<String>;
 
+        /// Return the sorted list of categories present across all books in the library.
+        fn library_get_books_categories(library: &Library) -> Vec<String>;
+
+        /// Return the list of languages present across all books in the library, with counts.
+        fn library_get_books_languages(library: &Library) -> Vec<LanguageEntry>;
+
         /// Set the filesystem path of a book (usually a `.zim` file).
         fn book_set_path(book: Pin<&mut Book>, path: &str);
 
@@ -128,6 +142,9 @@ mod ffi {
         /// Get the list of illustrations for the book.
         fn book_get_illustrations(book: &Book) -> Vec<BookIllustration>;
 
+        /// Get the self-name (native name) of a language by its ISO 639-3 code.
+        fn language_self_name(lang_code: &str) -> String;
+
         /// Create a server for the given library.
         fn create_server(library: SharedPtr<Library>) -> SharedPtr<Server>;
 
@@ -153,8 +170,11 @@ mod library;
 mod server;
 
 pub use book::{BookIllustration, BookMetadata, book_set_path, new_book};
+pub use ffi::LanguageEntry;
+pub use ffi::language_self_name;
 pub use library::{
-    Filter, LibraryHandle, library_add_book, library_add_book_from_path, library_filter, library_get_book_metadata,
+    Filter, LibraryHandle, library_add_book, library_add_book_from_path, library_filter,
+    library_get_book_metadata, library_get_books_categories, library_get_books_languages,
     new_library,
 };
 pub use server::{IpMode, ServerConfig, new_server, server_start, server_stop};

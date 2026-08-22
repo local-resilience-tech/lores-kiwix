@@ -137,6 +137,19 @@ pub fn library_filter(library: &mut crate::Library, filter: &Filter) -> Vec<Stri
         .collect()
 }
 
+/// Return the sorted list of categories present across all books in the library.
+pub fn library_get_books_categories(library: &crate::Library) -> Vec<String> {
+    ffi::library_get_books_categories(library)
+        .into_iter()
+        .map(|s| s.to_string())
+        .collect()
+}
+
+/// Return the list of languages present in the library, each with its ISO 639-3 code,
+/// self name, and book count.
+pub fn library_get_books_languages(library: &crate::Library) -> Vec<ffi::LanguageEntry> {
+    ffi::library_get_books_languages(library).into_iter().collect()
+}
 /// Add a book to a library.
 pub fn library_add_book(library: &mut crate::Library, book: &cxx::SharedPtr<ffi::Book>) -> bool {
     // SAFETY: `Library` is an opaque C++ type; `addBook` is thread-safe for

@@ -166,3 +166,28 @@ bool server_start(kiwix::Server& server) {
 void server_stop(kiwix::Server& server) {
     server.stop();
 }
+
+rust::Vec<rust::String> library_get_books_categories(const kiwix::Library& library) {
+    rust::Vec<rust::String> result;
+    for (const auto& category : library.getBooksCategories()) {
+        result.push_back(rust::String(category));
+    }
+    return result;
+}
+
+rust::Vec<LanguageEntry> library_get_books_languages(const kiwix::Library& library) {
+    rust::Vec<LanguageEntry> result;
+    for (const auto& pair : library.getBooksLanguagesWithCounts()) {
+        const std::string& code = pair.first;
+        result.push_back(LanguageEntry{
+            rust::String(code),
+            rust::String(kiwix::getLanguageSelfName(code)),
+            static_cast<uint32_t>(pair.second)
+        });
+    }
+    return result;
+}
+
+rust::String language_self_name(rust::Str lang_code) {
+    return rust::String(kiwix::getLanguageSelfName(std::string(lang_code)));
+}
