@@ -1,4 +1,10 @@
 div.book__wrapper.source-remote {
-  border-color: red;
   border-style: dashed;
+  border-width: 3px;
+  border-color: #d4d4d4;
+  background-color: transparent;
+}
+
+div.book__wrapper.source-local {
+  border-width: 3px;
 }
