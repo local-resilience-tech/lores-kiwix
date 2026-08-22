@@ -1,7 +1,8 @@
+use chrono::{DateTime, Utc};
 use elementtree::Element;
 use libkiwix_rust::BookMetadata;
 
-use super::{ATOM_NS, DC_NS, OPDS_NS, OPENSEARCH_NS, rfc3339_now};
+use super::{ATOM_NS, DC_NS, OPDS_NS, OPENSEARCH_NS};
 
 /// Build an Atom `<entry>` element from a libkiwix `BookMetadata`.
 ///
@@ -104,7 +105,7 @@ pub fn build_entry(meta: &BookMetadata, feed: &Element) -> Element {
 }
 
 /// Build the root `<feed>` element for the catalog response.
-pub fn build_feed_root(query: &str, total: usize, start: usize, items_per_page: usize) -> Element {
+pub fn build_feed_root(now: DateTime<Utc>, query: &str, total: usize, start: usize, items_per_page: usize) -> Element {
     let mut feed = Element::new((ATOM_NS, "feed"));
     feed.register_namespace(DC_NS, Some("dc"));
     feed.register_namespace(OPDS_NS, Some("opds"));
@@ -144,7 +145,8 @@ pub fn build_feed_root(query: &str, total: usize, start: usize, items_per_page: 
     };
     feed.append_new_child((ATOM_NS, "title")).set_text(title);
 
-    feed.append_new_child((ATOM_NS, "updated")).set_text(rfc3339_now());
+    feed.append_new_child((ATOM_NS, "updated"))
+        .set_text(now.to_rfc3339_opts(chrono::SecondsFormat::Secs, true));
 
     feed.append_new_child((ATOM_NS, "totalResults"))
         .set_text(total.to_string());
@@ -159,6 +161,26 @@ pub fn build_feed_root(query: &str, total: usize, start: usize, items_per_page: 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::xml::render_xml;
+    use indoc::indoc;
+    use pretty_assertions::assert_eq;
+
+    fn normalize(s: &str) -> Vec<&str> {
+        s.lines().map(str::trim).filter(|l| !l.is_empty()).collect()
+    }
+
+    fn make_zim(id: &str) -> crate::projection::zims::Zim {
+        crate::projection::zims::Zim {
+            id: id.to_string(),
+            filename: format!("{id}.zim"),
+            date: "2026-06-01".to_string(),
+            title: "Test Book".to_string(),
+            description: "A test description.".to_string(),
+            language: "eng".to_string(),
+            creator: "Test Author".to_string(),
+            ..crate::projection::zims::Zim::default()
+        }
+    }
 
     #[test]
     fn build_entry_renders_xml() {
@@ -172,11 +194,65 @@ mod tests {
         let feed = Element::new((ATOM_NS, "feed"));
 
         let meta: BookMetadata = zim.into();
-        let result = build_entry(&meta, &feed).to_string().unwrap();
+        let xml = render_xml(&build_entry(&meta, &feed)).expect("render failed");
+        let xml_str = String::from_utf8(xml).unwrap();
 
-        assert_eq!(
-            "<?xml version=\"1.0\" encoding=\"utf-8\"?><entry><id>urn:uuid:abc123</id><title /><updated>2026-06-01T00:00:00Z</updated><flavour>nopic</flavour><link href=\"/content/abc123\" rel=\"http://opds-spec.org/acquisition/open-access\" type=\"text/html\" /><link href=\"/content/abc123\" type=\"text/html\" /><dc:issued>2026-06-01T00:00:00Z</dc:issued></entry>",
-            result
-        );
+        let expected = indoc! {r#"
+            <?xml version="1.0" encoding="utf-8"?>
+            <entry>
+              <id>urn:uuid:abc123</id>
+              <title />
+              <updated>2026-06-01T00:00:00Z</updated>
+              <flavour>nopic</flavour>
+              <link href="/content/abc123" rel="http://opds-spec.org/acquisition/open-access" type="text/html" />
+              <link href="/content/abc123" type="text/html" />
+              <dc:issued>2026-06-01T00:00:00Z</dc:issued>
+            </entry>
+        "#};
+
+        assert_eq!(normalize(&xml_str), normalize(expected));
+    }
+
+    #[test]
+    fn build_feed_renders_xml() {
+        let now = chrono::DateTime::parse_from_rfc3339("2026-08-22T12:00:00Z")
+            .unwrap()
+            .to_utc();
+        let mut feed = build_feed_root(now, "language=eng", 1, 0, 10);
+        let meta: BookMetadata = make_zim("abc123").into();
+        feed.append_child(build_entry(&meta, &feed));
+
+        let xml = render_xml(&feed).expect("render failed");
+        let xml_str = String::from_utf8(xml).unwrap();
+
+        let expected = indoc! {r#"
+            <?xml version="1.0" encoding="utf-8"?>
+            <feed xmlns="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/terms/" xmlns:opds="https://specs.opds.io/opds-1.2" xmlns:opensearch="http://a9.com/-/spec/opensearch/1.1/">
+              <id>urn:uuid:lores-kiwix:entries?language=eng</id>
+              <link href="/catalog/v2/entries?language=eng" rel="self" type="application/atom+xml;profile=opds-catalog;kind=acquisition" />
+              <link href="/catalog/v2/root.xml" rel="start" type="application/atom+xml;profile=opds-catalog;kind=navigation" />
+              <link href="/catalog/v2/root.xml" rel="up" type="application/atom+xml;profile=opds-catalog;kind=navigation" />
+              <title>Filtered Entries (language=eng)</title>
+              <updated>2026-08-22T12:00:00Z</updated>
+              <totalResults>1</totalResults>
+              <startIndex>0</startIndex>
+              <itemsPerPage>10</itemsPerPage>
+              <entry>
+                <id>urn:uuid:abc123</id>
+                <title>Test Book</title>
+                <updated>2026-06-01T00:00:00Z</updated>
+                <summary>A test description.</summary>
+                <language>eng</language>
+                <link href="/content/abc123" rel="http://opds-spec.org/acquisition/open-access" type="text/html" />
+                <link href="/content/abc123" type="text/html" />
+                <author>
+                  <name>Test Author</name>
+                </author>
+                <dc:issued>2026-06-01T00:00:00Z</dc:issued>
+              </entry>
+            </feed>
+        "#};
+
+        assert_eq!(normalize(&xml_str), normalize(expected));
     }
 }

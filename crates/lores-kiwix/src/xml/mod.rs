@@ -14,10 +14,6 @@ pub fn render_xml(element: &Element) -> Result<Vec<u8>, elementtree::Error> {
     Ok(buf)
 }
 
-fn rfc3339_now() -> String {
-    chrono::Utc::now().to_rfc3339_opts(chrono::SecondsFormat::Secs, true)
-}
-
 fn url_encode(s: &str) -> String {
     url::form_urlencoded::byte_serialize(s.as_bytes()).collect()
 }

@@ -119,7 +119,8 @@ struct CatalogueEntriesResult<'a> {
 
 /// Render a `CatalogueEntriesResult` into an Atom feed byte buffer.
 fn render_result(result: CatalogueEntriesResult<'_>) -> Result<Vec<u8>, elementtree::Error> {
-    let mut feed = build_feed_root(result.query, result.total, result.start, result.items_per_page);
+    let now = chrono::Utc::now();
+    let mut feed = build_feed_root(now, result.query, result.total, result.start, result.items_per_page);
 
     for metadata in &result.entries {
         feed.append_child(build_entry(metadata, &feed));

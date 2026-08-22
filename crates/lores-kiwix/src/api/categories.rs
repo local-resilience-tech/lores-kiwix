@@ -46,9 +46,10 @@ pub async fn handler(State(state): State<ApiState>) -> Response {
 }
 
 fn render_categories(categories: &[String]) -> Result<Vec<u8>, elementtree::Error> {
-    let mut feed = build_feed_root();
+    let now = chrono::Utc::now();
+    let mut feed = build_feed_root(now);
     for category in categories {
-        let entry = build_category(category, &feed);
+        let entry = build_category(category, now, &feed);
         feed.append_child(entry);
     }
 
