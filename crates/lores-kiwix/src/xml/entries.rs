@@ -1,6 +1,7 @@
 use chrono::{DateTime, Utc};
 use elementtree::Element;
-use libkiwix_rust::BookMetadata;
+
+use crate::utilities::book::{LoResBook, LoResBookSource};
 
 use super::{ATOM_NS, DC_NS, OPDS_NS, OPENSEARCH_NS};
 
@@ -8,15 +9,16 @@ use super::{ATOM_NS, DC_NS, OPDS_NS, OPENSEARCH_NS};
 ///
 /// This mirrors the libkiwix `catalog_v2_entry.xml` mustache template as
 /// closely as possible.
-pub fn build_entry(meta: &BookMetadata, feed: &Element) -> Element {
+pub fn build_entry(lores_book: &LoResBook, feed: &Element) -> Element {
+    let book = &lores_book.book;
     let mut entry = Element::new_with_namespaces((ATOM_NS, "entry"), feed);
     entry
         .append_new_child((ATOM_NS, "id"))
-        .set_text(format!("urn:uuid:{}", meta.id));
-    entry.append_new_child((ATOM_NS, "title")).set_text(&meta.title);
+        .set_text(format!("urn:uuid:{}", book.id));
+    entry.append_new_child((ATOM_NS, "title")).set_text(&book.title);
 
-    let updated = if !meta.date.is_empty() {
-        Some(format!("{}T00:00:00Z", meta.date))
+    let updated = if !book.date.is_empty() {
+        Some(format!("{}T00:00:00Z", book.date))
     } else {
         None
     };
@@ -24,48 +26,48 @@ pub fn build_entry(meta: &BookMetadata, feed: &Element) -> Element {
         entry.append_new_child((ATOM_NS, "updated")).set_text(updated);
     }
 
-    if !meta.description.is_empty() {
-        entry.append_new_child((ATOM_NS, "summary")).set_text(&meta.description);
+    if !book.description.is_empty() {
+        entry.append_new_child((ATOM_NS, "summary")).set_text(&book.description);
     }
 
-    if !meta.language.is_empty() {
-        entry.append_new_child((ATOM_NS, "language")).set_text(&meta.language);
+    if !book.language.is_empty() {
+        entry.append_new_child((ATOM_NS, "language")).set_text(&book.language);
     }
 
-    if !meta.name.is_empty() {
-        entry.append_new_child((ATOM_NS, "name")).set_text(&meta.name);
+    if !book.name.is_empty() {
+        entry.append_new_child((ATOM_NS, "name")).set_text(&book.name);
     }
 
-    if !meta.flavour.is_empty() {
-        entry.append_new_child((ATOM_NS, "flavour")).set_text(&meta.flavour);
+    if !book.flavour.is_empty() {
+        entry.append_new_child((ATOM_NS, "flavour")).set_text(&book.flavour);
     }
 
-    if !meta.category.is_empty() {
-        entry.append_new_child((ATOM_NS, "category")).set_text(&meta.category);
+    if !book.category.is_empty() {
+        entry.append_new_child((ATOM_NS, "category")).set_text(&book.category);
     }
 
-    if !meta.tags.is_empty() {
-        entry.append_new_child((ATOM_NS, "tags")).set_text(&meta.tags);
+    if !book.tags.is_empty() {
+        entry.append_new_child((ATOM_NS, "tags")).set_text(&book.tags);
     }
 
-    if meta.article_count > 0 {
+    if book.article_count > 0 {
         entry
             .append_new_child((ATOM_NS, "articleCount"))
-            .set_text(meta.article_count.to_string());
+            .set_text(book.article_count.to_string());
     }
 
-    if meta.media_count > 0 {
+    if book.media_count > 0 {
         entry
             .append_new_child((ATOM_NS, "mediaCount"))
-            .set_text(meta.media_count.to_string());
+            .set_text(book.media_count.to_string());
     }
 
-    for illustration in &meta.illustrations {
+    for illustration in &book.illustrations {
         let size = illustration.width;
         entry
             .append_new_child((ATOM_NS, "link"))
             .set_attr("rel", "http://opds-spec.org/image/thumbnail")
-            .set_attr("href", format!("/catalog/v2/illustration/{}/?size={}", meta.id, size))
+            .set_attr("href", format!("/catalog/v2/illustration/{}/?size={}", book.id, size))
             .set_attr(
                 "type",
                 format!("{};width={};height={};scale=1", illustration.mime_type, size, size),
@@ -75,30 +77,39 @@ pub fn build_entry(meta: &BookMetadata, feed: &Element) -> Element {
     entry
         .append_new_child((ATOM_NS, "link"))
         .set_attr("rel", "http://opds-spec.org/acquisition/open-access")
-        .set_attr("href", format!("/content/{}", meta.id))
+        .set_attr("href", format!("/content/{}", book.id))
         .set_attr("type", "text/html");
 
     entry
         .append_new_child((ATOM_NS, "link"))
         .set_attr("type", "text/html")
-        .set_attr("href", format!("/content/{}", meta.id));
+        .set_attr("href", format!("/content/{}", book.id));
 
-    if !meta.creator.is_empty() {
+    if !book.creator.is_empty() {
         entry
             .append_new_child((ATOM_NS, "author"))
             .append_new_child((ATOM_NS, "name"))
-            .set_text(&meta.creator);
+            .set_text(&book.creator);
     }
 
-    if !meta.publisher.is_empty() {
+    if !book.publisher.is_empty() {
         entry
             .append_new_child((ATOM_NS, "publisher"))
             .append_new_child((ATOM_NS, "name"))
-            .set_text(&meta.publisher);
+            .set_text(&book.publisher);
     }
 
     if let Some(updated) = updated {
         entry.append_new_child((ATOM_NS, "dc:issued")).set_text(updated);
+    }
+
+    match lores_book.source {
+        LoResBookSource::Local => {
+            entry.append_new_child((ATOM_NS, "source")).set_text("local");
+        }
+        LoResBookSource::Remote => {
+            entry.append_new_child((ATOM_NS, "source")).set_text("remote");
+        }
     }
 
     entry
@@ -163,6 +174,7 @@ mod tests {
     use super::*;
     use crate::xml::render_xml;
     use indoc::indoc;
+
     use pretty_assertions::assert_eq;
 
     fn normalize(s: &str) -> Vec<&str> {
@@ -193,8 +205,8 @@ mod tests {
         };
         let feed = Element::new((ATOM_NS, "feed"));
 
-        let meta: BookMetadata = zim.into();
-        let xml = render_xml(&build_entry(&meta, &feed)).expect("render failed");
+        let book: LoResBook = zim.into();
+        let xml = render_xml(&build_entry(&book, &feed)).expect("render failed");
         let xml_str = String::from_utf8(xml).unwrap();
 
         let expected = indoc! {r#"
@@ -219,8 +231,8 @@ mod tests {
             .unwrap()
             .to_utc();
         let mut feed = build_feed_root(now, "language=eng", 1, 0, 10);
-        let meta: BookMetadata = make_zim("abc123").into();
-        feed.append_child(build_entry(&meta, &feed));
+        let book: LoResBook = make_zim("abc123").into();
+        feed.append_child(build_entry(&book, &feed));
 
         let xml = render_xml(&feed).expect("render failed");
         let xml_str = String::from_utf8(xml).unwrap();
