@@ -8,7 +8,7 @@ use libkiwix_rust::Filter;
 
 use crate::projection::zims;
 use crate::utilities::pagination::Paginator;
-use crate::xml::atom::{ATOM_NS, build_entry_from_metadata, build_feed_root};
+use crate::xml::entries::{build_entry_from_metadata, build_feed_root};
 use crate::{api::ApiState, proxy::proxy_error};
 
 /// Serve the `/catalog/v2/entries` endpoint directly from the local libkiwix
@@ -121,7 +121,7 @@ fn render_result(result: CatalogueEntriesResult<'_>) -> Result<Vec<u8>, elementt
     let mut feed = build_feed_root(result.query, result.total, result.start, result.items_per_page);
 
     for metadata in &result.entries {
-        feed.append_child(build_entry_from_metadata(metadata, ATOM_NS, &feed));
+        feed.append_child(build_entry_from_metadata(metadata, &feed));
     }
 
     let mut buf = Vec::new();

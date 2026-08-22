@@ -8,7 +8,7 @@ use elementtree::Element;
 
 use crate::api::ApiState;
 use crate::proxy::proxy_error;
-use crate::xml::atom::ATOM_NS;
+use crate::xml::ATOM_NS;
 
 pub async fn handler(State(state): State<ApiState>) -> Response {
     let categories = {
