@@ -1,5 +1,6 @@
 pub mod categories;
 pub mod entries;
+pub mod languages;
 
 use elementtree::Element;
 

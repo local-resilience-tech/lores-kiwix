@@ -6,6 +6,7 @@ use sqlx::SqlitePool;
 
 pub mod categories;
 pub mod entries;
+pub mod languages;
 
 /// Shared state passed to API route handlers.
 #[derive(Clone)]

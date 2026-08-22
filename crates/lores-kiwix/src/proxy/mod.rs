@@ -11,7 +11,7 @@ use axum_reverse_proxy::ReverseProxy;
 use libkiwix_rust::LibraryHandle;
 use sqlx::SqlitePool;
 
-use crate::api::{ApiState, categories, entries};
+use crate::api::{ApiState, categories, entries, languages};
 
 mod append_text;
 mod static_override;
@@ -24,6 +24,7 @@ pub fn app(upstream: impl Into<String>, pool: SqlitePool, library: Arc<Mutex<Lib
     Router::new()
         .route("/catalog/v2/entries", any(entries::handler))
         .route("/catalog/v2/categories", any(categories::handler))
+        .route("/catalog/v2/languages", any(languages::handler))
         .route(
             "/skin/index.css",
             any(append_text::handler(

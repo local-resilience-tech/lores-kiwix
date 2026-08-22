@@ -174,3 +174,16 @@ rust::Vec<rust::String> library_get_books_categories(const kiwix::Library& libra
     }
     return result;
 }
+
+rust::Vec<LanguageEntry> library_get_books_languages(const kiwix::Library& library) {
+    rust::Vec<LanguageEntry> result;
+    for (const auto& pair : library.getBooksLanguagesWithCounts()) {
+        const std::string& code = pair.first;
+        result.push_back(LanguageEntry{
+            rust::String(code),
+            rust::String(kiwix::getLanguageSelfName(code)),
+            static_cast<uint32_t>(pair.second)
+        });
+    }
+    return result;
+}

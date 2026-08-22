@@ -14,6 +14,14 @@ mod ffi {
         pub url: String,
     }
 
+    /// A language present in the library, with its book count.
+    #[derive(Debug, Clone)]
+    pub struct LanguageEntry {
+        pub lang_code: String,
+        pub lang_name: String,
+        pub book_count: u32,
+    }
+
     unsafe extern "C++" {
         include!("src/bridge.h");
 
@@ -80,6 +88,9 @@ mod ffi {
 
         /// Return the sorted list of categories present across all books in the library.
         fn library_get_books_categories(library: &Library) -> Vec<String>;
+
+        /// Return the list of languages present across all books in the library, with counts.
+        fn library_get_books_languages(library: &Library) -> Vec<LanguageEntry>;
 
         /// Set the filesystem path of a book (usually a `.zim` file).
         fn book_set_path(book: Pin<&mut Book>, path: &str);
@@ -156,9 +167,11 @@ mod library;
 mod server;
 
 pub use book::{BookIllustration, BookMetadata, book_set_path, new_book};
+pub use ffi::LanguageEntry;
 pub use library::{
     Filter, LibraryHandle, library_add_book, library_add_book_from_path, library_filter,
-    library_get_book_metadata, library_get_books_categories, new_library,
+    library_get_book_metadata, library_get_books_categories, library_get_books_languages,
+    new_library,
 };
 pub use server::{IpMode, ServerConfig, new_server, server_start, server_stop};
 
