@@ -42,6 +42,35 @@ pub async fn list_zims(pool: &SqlitePool) -> Result<Vec<Zim>, sqlx::Error> {
         .await
 }
 
+/// Return distinct non-empty categories recorded in the projection database.
+pub async fn list_categories(pool: &SqlitePool) -> Result<Vec<String>, sqlx::Error> {
+    sqlx::query_scalar("SELECT DISTINCT category FROM zims WHERE category != '' ORDER BY category")
+        .fetch_all(pool)
+        .await
+}
+
+/// Return language codes with book counts from the projection database.
+///
+/// The `language` column may be comma-separated (e.g. `"eng,fra"`), so each
+/// code is counted individually.
+pub async fn list_languages(pool: &SqlitePool) -> Result<Vec<(String, u32)>, sqlx::Error> {
+    let rows: Vec<String> =
+        sqlx::query_scalar("SELECT language FROM zims WHERE language != ''")
+            .fetch_all(pool)
+            .await?;
+
+    let mut counts: std::collections::HashMap<String, u32> = std::collections::HashMap::new();
+    for row in rows {
+        for code in row.split(',').map(str::trim).filter(|s| !s.is_empty()) {
+            *counts.entry(code.to_string()).or_insert(0) += 1;
+        }
+    }
+
+    let mut result: Vec<(String, u32)> = counts.into_iter().collect();
+    result.sort_unstable_by(|a, b| a.0.cmp(&b.0));
+    Ok(result)
+}
+
 /// Criteria for filtering extra ZIMs from the projection database.
 pub struct FilterCriteria<'a> {
     pub query: Option<&'a str>,

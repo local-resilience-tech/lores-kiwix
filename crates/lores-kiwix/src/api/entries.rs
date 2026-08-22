@@ -8,7 +8,8 @@ use libkiwix_rust::Filter;
 
 use crate::projection::zims;
 use crate::utilities::pagination::Paginator;
-use crate::xml::atom::{ATOM_NS, build_entry_from_metadata, build_feed_root};
+use crate::xml::entries::{build_entry, build_feed_root};
+use crate::xml::render_xml;
 use crate::{api::ApiState, proxy::proxy_error};
 
 /// Serve the `/catalog/v2/entries` endpoint directly from the local libkiwix
@@ -118,15 +119,14 @@ struct CatalogueEntriesResult<'a> {
 
 /// Render a `CatalogueEntriesResult` into an Atom feed byte buffer.
 fn render_result(result: CatalogueEntriesResult<'_>) -> Result<Vec<u8>, elementtree::Error> {
-    let mut feed = build_feed_root(result.query, result.total, result.start, result.items_per_page);
+    let now = chrono::Utc::now();
+    let mut feed = build_feed_root(now, result.query, result.total, result.start, result.items_per_page);
 
     for metadata in &result.entries {
-        feed.append_child(build_entry_from_metadata(metadata, ATOM_NS, &feed));
+        feed.append_child(build_entry(metadata, &feed));
     }
 
-    let mut buf = Vec::new();
-    feed.to_writer(&mut buf)?;
-    Ok(buf)
+    render_xml(&feed)
 }
 
 /// Parsed query parameters for the entries endpoint.
