@@ -187,3 +187,7 @@ rust::Vec<LanguageEntry> library_get_books_languages(const kiwix::Library& libra
     }
     return result;
 }
+
+rust::String language_self_name(rust::Str lang_code) {
+    return rust::String(kiwix::getLanguageSelfName(std::string(lang_code)));
+}

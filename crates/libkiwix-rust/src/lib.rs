@@ -142,6 +142,9 @@ mod ffi {
         /// Get the list of illustrations for the book.
         fn book_get_illustrations(book: &Book) -> Vec<BookIllustration>;
 
+        /// Get the self-name (native name) of a language by its ISO 639-3 code.
+        fn language_self_name(lang_code: &str) -> String;
+
         /// Create a server for the given library.
         fn create_server(library: SharedPtr<Library>) -> SharedPtr<Server>;
 
@@ -168,6 +171,7 @@ mod server;
 
 pub use book::{BookIllustration, BookMetadata, book_set_path, new_book};
 pub use ffi::LanguageEntry;
+pub use ffi::language_self_name;
 pub use library::{
     Filter, LibraryHandle, library_add_book, library_add_book_from_path, library_filter,
     library_get_book_metadata, library_get_books_categories, library_get_books_languages,

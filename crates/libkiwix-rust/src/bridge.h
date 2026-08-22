@@ -63,6 +63,7 @@ struct LanguageEntry;
 
 rust::Vec<BookIllustration> book_get_illustrations(const kiwix::Book& book);
 rust::Vec<LanguageEntry> library_get_books_languages(const kiwix::Library& library);
+rust::String language_self_name(rust::Str lang_code);
 
 std::shared_ptr<kiwix::Server> create_server(std::shared_ptr<kiwix::Library> library);
 
