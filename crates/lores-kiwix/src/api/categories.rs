@@ -6,15 +6,31 @@ use axum::{
 };
 
 use crate::api::ApiState;
+use crate::projection::zims;
 use crate::proxy::proxy_error;
 use crate::xml::categories::{build_category, build_feed_root};
 use crate::xml::render_xml;
 
 pub async fn handler(State(state): State<ApiState>) -> Response {
-    let categories = {
+    let library_categories = {
         let library = state.library.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
         libkiwix_rust::library_get_books_categories(&library)
     };
+
+    let projection_categories = match zims::list_categories(&state.pool).await {
+        Ok(cats) => cats,
+        Err(err) => {
+            tracing::error!(error = %err, "failed to query projection categories");
+            return proxy_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "failed to query projection categories",
+            );
+        }
+    };
+
+    let mut categories: Vec<String> = library_categories.into_iter().chain(projection_categories).collect();
+    categories.sort_unstable();
+    categories.dedup();
 
     match render_categories(&categories) {
         Ok(buf) => Response::builder()

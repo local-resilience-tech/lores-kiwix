@@ -42,6 +42,13 @@ pub async fn list_zims(pool: &SqlitePool) -> Result<Vec<Zim>, sqlx::Error> {
         .await
 }
 
+/// Return distinct non-empty categories recorded in the projection database.
+pub async fn list_categories(pool: &SqlitePool) -> Result<Vec<String>, sqlx::Error> {
+    sqlx::query_scalar("SELECT DISTINCT category FROM zims WHERE category != '' ORDER BY category")
+        .fetch_all(pool)
+        .await
+}
+
 /// Criteria for filtering extra ZIMs from the projection database.
 pub struct FilterCriteria<'a> {
     pub query: Option<&'a str>,
