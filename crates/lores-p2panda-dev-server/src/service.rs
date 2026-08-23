@@ -22,16 +22,42 @@ pub struct DevPandaService {
     /// One broadcast channel per `app_id`. All subscribers to the same app
     /// share the same channel so they see each other's operations.
     topics: Arc<RwLock<HashMap<String, broadcast::Sender<OperationEvent>>>>,
+    /// Stable author id (32-byte, incrementing) assigned per `instance_id`.
+    authors: Arc<RwLock<HashMap<String, Vec<u8>>>>,
     /// Monotonically increasing counter used to synthesise `operation_id`s.
     counter: Arc<AtomicU64>,
+    /// Monotonically increasing counter used to assign author ids.
+    author_counter: Arc<AtomicU64>,
 }
 
 impl DevPandaService {
     pub fn new() -> Self {
         Self {
             topics: Arc::new(RwLock::new(HashMap::new())),
+            authors: Arc::new(RwLock::new(HashMap::new())),
             counter: Arc::new(AtomicU64::new(1)),
+            author_counter: Arc::new(AtomicU64::new(1)),
         }
+    }
+
+    async fn author_id_for(&self, instance_id: &str) -> Vec<u8> {
+        {
+            let authors = self.authors.read().await;
+            if let Some(id) = authors.get(instance_id) {
+                return id.clone();
+            }
+        }
+        let mut authors = self.authors.write().await;
+        // Re-check after acquiring write lock.
+        authors
+            .entry(instance_id.to_string())
+            .or_insert_with(|| {
+                let n = self.author_counter.fetch_add(1, Ordering::SeqCst);
+                let mut bytes = vec![0u8; 32];
+                bytes[24..32].copy_from_slice(&n.to_be_bytes());
+                bytes
+            })
+            .clone()
     }
 
     async fn topic_tx(&self, app_id: &str) -> broadcast::Sender<OperationEvent> {
@@ -78,6 +104,8 @@ impl Panda for DevPandaService {
 
         let tx = self.topic_tx(&req.app_id).await;
 
+        let author = self.author_id_for(&req.instance_id).await;
+
         let timestamp = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
             .unwrap_or_default()
@@ -85,7 +113,7 @@ impl Panda for DevPandaService {
 
         let event = OperationEvent {
             topic_id: topic_id_from_app_id(&req.app_id),
-            author: vec![0u8; 32],
+            author,
             operation_id: self.next_operation_id(),
             timestamp,
             payload: req.payload,
