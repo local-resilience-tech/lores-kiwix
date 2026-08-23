@@ -30,6 +30,17 @@ impl std::fmt::Display for NodeError {
     }
 }
 
+#[derive(Clone, Serialize, Deserialize)]
+pub struct AppNodeOperation<Op> {
+    pub op: Op,
+    /// 32-byte p2panda author public key. `None` for locally-published operations.
+    pub author: Option<Vec<u8>>,
+    /// 32-byte p2panda operation hash. `None` for locally-published operations.
+    pub operation_id: Option<Vec<u8>>,
+    /// Unix timestamp in milliseconds. `None` for locally-published operations.
+    pub timestamp: Option<u64>,
+}
+
 /// The central node handle used by application code.
 ///
 /// Generic over the operation type `Op` — the application supplies its own
@@ -124,7 +135,7 @@ impl<Op: Clone + Serialize + Send + 'static> AppNode<Op> {
     }
 
     /// Subscribe to operations published through this node (loopback).
-    pub fn subscribe(&self) -> broadcast::Receiver<Op> {
+    pub fn subscribe(&self) -> broadcast::Receiver<AppNodeOperation<Op>> {
         self.consumer.subscribe()
     }
 
@@ -161,7 +172,15 @@ impl<Op: Clone + Serialize + Send + 'static> AppNode<Op> {
         let mut t = self.operation_store.lock().await;
         t.publish(payload, None).await?;
         drop(t);
-        self.consumer.send(operation.clone());
+
+        let app_node_operation = AppNodeOperation::<Op> {
+            op: operation.clone(),
+            author: None,
+            operation_id: None,
+            timestamp: None,
+        };
+
+        self.consumer.send(app_node_operation);
         Ok(())
     }
 

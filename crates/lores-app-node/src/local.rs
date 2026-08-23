@@ -3,7 +3,7 @@ use std::pin::Pin;
 use futures::{stream, StreamExt};
 use sqlx::SqlitePool;
 
-use crate::store::{OperationStore, OperationStream, StoreError};
+use crate::store::{OperationStore, OperationStream, RawOperationEvent, StoreError};
 
 /// [`OperationStore`] implementation backed by a local SQLite database.
 ///
@@ -79,7 +79,8 @@ impl OperationStore for LocalOperationStore {
                 .await
                 .map_err(|e| StoreError::Other(e.to_string()))?;
 
-            let s: OperationStream = Box::pin(stream::iter(rows).map(|(payload,)| Ok(payload)));
+            let s: OperationStream =
+                Box::pin(stream::iter(rows).map(|(payload,)| Ok(RawOperationEvent::new_local(payload))));
             Ok(s)
         })
     }

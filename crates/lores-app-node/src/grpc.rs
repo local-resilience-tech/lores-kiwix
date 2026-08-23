@@ -3,7 +3,7 @@ use std::pin::Pin;
 use futures::StreamExt;
 use lores_p2panda_client::{PandaClient, PandaError};
 
-use crate::store::{OperationStore, OperationStream, StoreError};
+use crate::store::{OperationStore, OperationStream, RawOperationEvent, StoreError};
 
 impl From<PandaError> for StoreError {
     fn from(e: PandaError) -> Self {
@@ -68,8 +68,13 @@ impl OperationStore for GrpcOperationStore {
                 .map_err(StoreError::from)?;
 
             let stream: OperationStream = Box::pin(response.into_inner().map(|item| {
-                item.map(|event| event.payload)
-                    .map_err(|s| StoreError::Other(s.to_string()))
+                item.map(|event| RawOperationEvent {
+                    payload: event.payload,
+                    author: Some(event.author),
+                    operation_id: Some(event.operation_id),
+                    timestamp: Some(event.timestamp),
+                })
+                .map_err(|s| StoreError::Other(s.to_string()))
             }));
 
             Ok(stream)

@@ -23,8 +23,27 @@ impl std::fmt::Display for StoreError {
 
 impl std::error::Error for StoreError {}
 
-/// A boxed, heap-allocated stream of raw operation payloads.
-pub(crate) type OperationStream = Pin<Box<dyn Stream<Item = Result<Vec<u8>, StoreError>> + Send>>;
+/// Metadata forwarded from the p2panda layer alongside a raw payload.
+/// Fields are `None` for locally-originated operations (pre-network assignment).
+pub(crate) struct RawOperationEvent {
+    pub payload: Vec<u8>,
+    /// 32-byte p2panda author public key.
+    pub author: Option<Vec<u8>>,
+    /// 32-byte p2panda operation hash.
+    pub operation_id: Option<Vec<u8>>,
+    /// Unix timestamp in milliseconds.
+    pub timestamp: Option<u64>,
+}
+
+impl RawOperationEvent {
+    /// Construct an event for a locally-published operation with no p2panda metadata.
+    pub(crate) fn new_local(payload: Vec<u8>) -> Self {
+        Self { payload, author: None, operation_id: None, timestamp: None }
+    }
+}
+
+/// A boxed, heap-allocated stream of raw operation events.
+pub(crate) type OperationStream = Pin<Box<dyn Stream<Item = Result<RawOperationEvent, StoreError>> + Send>>;
 
 /// Internal trait over raw-bytes operation delivery.
 ///
