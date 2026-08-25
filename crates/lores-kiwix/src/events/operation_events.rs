@@ -3,7 +3,7 @@ use crate::node::operations::{AppOperation, BookRegisteredDataV1};
 use lores_app_node::AppNodeOperation;
 use sqlx::SqlitePool;
 
-use crate::projection::{books, holdings};
+use crate::projection::{books, holdings, nodes};
 
 pub fn register(node: &LoresKiwixNode, pool: SqlitePool) {
     let mut rx = node.subscribe();
@@ -44,6 +44,7 @@ async fn project_book_registered(
 
     if let Some(node) = &node_op.author_node_id {
         let node_id = hex::encode(&node.0);
+        nodes::ensure_node(&mut *tx, &node_id).await?;
         holdings::insert_holding(&mut *tx, &data.book_id, &node_id).await?;
     }
 

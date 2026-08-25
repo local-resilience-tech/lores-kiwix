@@ -1,5 +1,5 @@
 use lores_app_node::LoResNodeId;
-use sqlx::SqlitePool;
+use sqlx::{Executor, Sqlite, SqlitePool};
 
 pub async fn set_local_node(pool: &SqlitePool, node_id: &LoResNodeId) -> Result<(), sqlx::Error> {
     let node_id = node_id.to_hex();
@@ -16,4 +16,16 @@ pub async fn set_local_node(pool: &SqlitePool, node_id: &LoResNodeId) -> Result<
         .await?;
 
     tx.commit().await
+}
+
+/// Insert a node record if it doesn't exist yet; never overwrites the `local` flag.
+pub async fn ensure_node<'e, E>(executor: E, node_id: &str) -> Result<(), sqlx::Error>
+where
+    E: Executor<'e, Database = Sqlite>,
+{
+    sqlx::query("INSERT INTO nodes (id, local) VALUES (?, FALSE) ON CONFLICT (id) DO NOTHING")
+        .bind(node_id)
+        .execute(executor)
+        .await?;
+    Ok(())
 }

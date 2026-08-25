@@ -6,7 +6,7 @@ use axum::{
 };
 use libkiwix_rust::Filter;
 
-use crate::utilities::pagination::Paginator;
+use crate::utilities::{filter::FilterCriteria, pagination::Paginator};
 use crate::xml::entries::{build_entry, build_feed_root};
 use crate::xml::render_xml;
 use crate::{api::ApiState, proxy::proxy_error};
@@ -45,9 +45,9 @@ pub async fn handler(State(state): State<ApiState>, req: Request) -> Response {
     };
 
     let extra_remote_books = if lib_exhausted {
-        let remote_books = books::list_books_filtered(
+        let remote_books = books::list_remote_books_filtered(
             &state.pool,
-            books::FilterCriteria {
+            FilterCriteria {
                 query: filter.query().as_deref(),
                 lang: filter.lang().as_deref(),
                 category: filter.category().as_deref(),
