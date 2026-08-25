@@ -6,7 +6,7 @@ use crate::node::operations::BookRegisteredDataV1;
 /// A row from the `zims` projection table.
 #[derive(Debug, Clone, FromRow, Default)]
 #[allow(dead_code)]
-pub struct Zim {
+pub struct Book {
     pub id: String,
     pub filename: String,
     pub name: String,
@@ -37,8 +37,8 @@ const SELECT_BOOK_COLUMNS: &str = "
 ";
 
 /// Return every book recorded in the projection database.
-pub async fn list_books(pool: &SqlitePool) -> Result<Vec<Zim>, sqlx::Error> {
-    sqlx::query_as::<_, Zim>(&format!("SELECT {SELECT_BOOK_COLUMNS} FROM books ORDER BY title"))
+pub async fn list_books(pool: &SqlitePool) -> Result<Vec<Book>, sqlx::Error> {
+    sqlx::query_as::<_, Book>(&format!("SELECT {SELECT_BOOK_COLUMNS} FROM books ORDER BY title"))
         .fetch_all(pool)
         .await
 }
@@ -87,7 +87,7 @@ pub struct FilterCriteria<'a> {
 /// The text match is a simplified stand-in for libkiwix's Xapian-backed search.
 /// It is case-insensitive for ASCII and uses `LIKE` with an escape character so
 /// literal `%`, `_` and `\` characters in the query are treated literally.
-pub async fn list_books_filtered(pool: &SqlitePool, criteria: FilterCriteria<'_>) -> Result<Vec<Zim>, sqlx::Error> {
+pub async fn list_books_filtered(pool: &SqlitePool, criteria: FilterCriteria<'_>) -> Result<Vec<Book>, sqlx::Error> {
     let query = criteria.query.map(|q| q.trim()).filter(|q| !q.is_empty());
     let langs: Vec<&str> = criteria
         .lang
@@ -132,7 +132,7 @@ pub async fn list_books_filtered(pool: &SqlitePool, criteria: FilterCriteria<'_>
 
     sql.push_str(" ORDER BY title");
 
-    let mut query_builder = sqlx::query_as::<_, Zim>(&sql);
+    let mut query_builder = sqlx::query_as::<_, Book>(&sql);
     for param in &params {
         query_builder = query_builder.bind(param);
     }
@@ -140,7 +140,7 @@ pub async fn list_books_filtered(pool: &SqlitePool, criteria: FilterCriteria<'_>
     query_builder.fetch_all(pool).await
 }
 
-impl Into<BookMetadata> for Zim {
+impl Into<BookMetadata> for Book {
     /// Convert this projection row into a libkiwix `BookMetadata` value.
     ///
     /// Fields that are not stored in the projection are left blank or zeroed,

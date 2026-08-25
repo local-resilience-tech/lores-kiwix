@@ -15,7 +15,7 @@ use crate::{projection::books, utilities::book::LoResBook};
 /// Serve the `/catalog/v2/entries` endpoint directly from the local libkiwix
 /// library instead of proxying to the upstream kiwix server.
 ///
-/// Results from libkiwix are filtered, ranked, and paginated. Any extra ZIMs
+/// Results from libkiwix are filtered, ranked, and paginated. Any extra books
 /// from the projection database are appended after the libkiwix results.
 pub async fn handler(State(state): State<ApiState>, req: Request) -> Response {
     let raw_query = req.uri().query().unwrap_or("");
@@ -44,8 +44,8 @@ pub async fn handler(State(state): State<ApiState>, req: Request) -> Response {
         (page_books, book_ids, lib_exhausted)
     };
 
-    let unique_extra_zims = if lib_exhausted {
-        let extra_zims = books::list_books_filtered(
+    let extra_remote_books = if lib_exhausted {
+        let remote_books = books::list_books_filtered(
             &state.pool,
             books::FilterCriteria {
                 query: filter.query().as_deref(),
@@ -55,12 +55,12 @@ pub async fn handler(State(state): State<ApiState>, req: Request) -> Response {
         )
         .await
         .unwrap_or_default();
-        filter_duplicate_zims(&extra_zims, &book_ids)
+        remove_duplicate_books(&remote_books, &book_ids)
     } else {
         vec![]
     };
 
-    let extra_page = params.paginator.tail(book_ids.len()).page(&unique_extra_zims);
+    let extra_page = params.paginator.tail(book_ids.len()).page(&extra_remote_books);
 
     let result = CatalogueEntriesResult {
         books: page_books
@@ -68,8 +68,8 @@ pub async fn handler(State(state): State<ApiState>, req: Request) -> Response {
             .chain(&extra_page.items.iter().cloned().map(Into::into).collect::<Vec<_>>())
             .cloned()
             .collect(),
-        total: book_ids.len() + unique_extra_zims.len(),
-        start: params.paginator.start_index(book_ids.len() + unique_extra_zims.len()),
+        total: book_ids.len() + extra_remote_books.len(),
+        start: params.paginator.start_index(book_ids.len() + extra_remote_books.len()),
         items_per_page: page_books.len() + extra_page.items.len(),
         query: raw_query,
     };
@@ -98,12 +98,12 @@ fn fetch_page_books(library: &mut libkiwix_rust::Library, page: &[String]) -> Ve
     page_metadata
 }
 
-/// Return the extra ZIMs whose IDs do not already appear in the libkiwix results.
-fn filter_duplicate_zims(extra_zims: &[books::Zim], book_ids: &[String]) -> Vec<books::Zim> {
+/// Return the extra books whose IDs do not already appear in the libkiwix results.
+fn remove_duplicate_books(books: &[books::Book], book_ids: &[String]) -> Vec<books::Book> {
     let ids: std::collections::HashSet<&str> = book_ids.iter().map(|id| id.as_str()).collect();
-    extra_zims
+    books
         .iter()
-        .filter(|zim| !ids.contains(zim.id.as_str()))
+        .filter(|book| !ids.contains(book.id.as_str()))
         .cloned()
         .collect()
 }
