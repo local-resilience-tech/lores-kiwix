@@ -1,0 +1,39 @@
+use std::collections::HashMap;
+
+use sqlx::{Executor, Sqlite, SqlitePool};
+
+/// Record that `node_id` holds `book_id`. Idempotent.
+pub async fn insert_holding<'e, E>(executor: E, book_id: &str, node_id: &str) -> Result<(), sqlx::Error>
+where
+    E: Executor<'e, Database = Sqlite>,
+{
+    sqlx::query("INSERT OR IGNORE INTO holdings (book_id, node_id) VALUES (?, ?)")
+        .bind(book_id)
+        .bind(node_id)
+        .execute(executor)
+        .await?;
+
+    Ok(())
+}
+
+/// Return a map of book_id → node IDs for each of the given book IDs.
+pub async fn fetch_holdings_for_books(
+    pool: &SqlitePool,
+    book_ids: &[String],
+) -> Result<HashMap<String, Vec<String>>, sqlx::Error> {
+    if book_ids.is_empty() {
+        return Ok(HashMap::new());
+    }
+    let placeholders = book_ids.iter().map(|_| "?").collect::<Vec<_>>().join(", ");
+    let sql = format!("SELECT book_id, node_id FROM holdings WHERE book_id IN ({placeholders})");
+    let mut query = sqlx::query_as::<_, (String, String)>(&sql);
+    for id in book_ids {
+        query = query.bind(id);
+    }
+    let rows = query.fetch_all(pool).await?;
+    let mut map: HashMap<String, Vec<String>> = HashMap::new();
+    for (book_id, node_id) in rows {
+        map.entry(book_id).or_default().push(node_id);
+    }
+    Ok(map)
+}

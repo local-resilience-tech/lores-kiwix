@@ -2,6 +2,7 @@ use libkiwix_rust::BookMetadata;
 use sqlx::{FromRow, SqlitePool};
 
 use crate::node::operations::BookRegisteredDataV1;
+use crate::utilities::filter::{FilterCriteria, build_filter_clauses};
 
 #[derive(Debug, Clone, FromRow, Default)]
 #[allow(dead_code)]
@@ -21,26 +22,19 @@ pub struct BookRow {
 }
 
 const SELECT_BOOK_COLUMNS: &str = "
-    id,
-    filename,
-    name,
-    date,
-    flavour,
-    title,
-    description,
-    language,
-    creator,
-    publisher,
-    category,
-    tags
+    books.id,
+    books.filename,
+    books.name,
+    books.date,
+    books.flavour,
+    books.title,
+    books.description,
+    books.language,
+    books.creator,
+    books.publisher,
+    books.category,
+    books.tags
 ";
-
-/// Return every book recorded in the projection database.
-pub async fn list_books(pool: &SqlitePool) -> Result<Vec<BookRow>, sqlx::Error> {
-    sqlx::query_as::<_, BookRow>(&format!("SELECT {SELECT_BOOK_COLUMNS} FROM books ORDER BY title"))
-        .fetch_all(pool)
-        .await
-}
 
 /// Return distinct non-empty categories recorded in the projection database.
 pub async fn list_categories(pool: &SqlitePool) -> Result<Vec<String>, sqlx::Error> {
@@ -70,13 +64,6 @@ pub async fn list_languages(pool: &SqlitePool) -> Result<Vec<(String, u32)>, sql
     Ok(result)
 }
 
-/// Criteria for filtering extra ZIMs from the projection database.
-pub struct FilterCriteria<'a> {
-    pub query: Option<&'a str>,
-    pub lang: Option<&'a str>,
-    pub category: Option<&'a str>,
-}
-
 /// Return books matching `criteria`.
 ///
 /// The text query is matched against the combined `query_text` column as a
@@ -86,50 +73,21 @@ pub struct FilterCriteria<'a> {
 /// The text match is a simplified stand-in for libkiwix's Xapian-backed search.
 /// It is case-insensitive for ASCII and uses `LIKE` with an escape character so
 /// literal `%`, `_` and `\` characters in the query are treated literally.
-pub async fn list_books_filtered(pool: &SqlitePool, criteria: FilterCriteria<'_>) -> Result<Vec<BookRow>, sqlx::Error> {
-    let query = criteria.query.map(|q| q.trim()).filter(|q| !q.is_empty());
-    let langs: Vec<&str> = criteria
-        .lang
-        .map(|l| l.split(',').map(|s| s.trim()).filter(|s| !s.is_empty()).collect())
-        .unwrap_or_default();
-    let categories: Vec<&str> = criteria
-        .category
-        .map(|c| c.split(',').map(|s| s.trim()).filter(|s| !s.is_empty()).collect())
-        .unwrap_or_default();
+pub async fn list_remote_books_filtered(
+    pool: &SqlitePool,
+    criteria: FilterCriteria<'_>,
+) -> Result<Vec<BookRow>, sqlx::Error> {
+    let base = format!(
+        "SELECT DISTINCT {SELECT_BOOK_COLUMNS} FROM books \
+         JOIN holdings ON holdings.book_id = books.id \
+         JOIN nodes ON nodes.id = holdings.node_id \
+         WHERE nodes.local = FALSE"
+    );
 
-    if query.is_none() && langs.is_empty() && categories.is_empty() {
-        return list_books(pool).await;
-    }
-
-    let mut sql = format!("SELECT {SELECT_BOOK_COLUMNS} FROM books WHERE 1=1");
-    let mut params: Vec<String> = Vec::new();
-
-    if let Some(query) = query {
-        let pattern = format!(
-            "%{}%",
-            query
-                .to_lowercase()
-                .replace('\\', "\\\\")
-                .replace('%', "\\%")
-                .replace('_', "\\_")
-        );
-        sql.push_str(" AND query_text LIKE ? ESCAPE '\\'");
-        params.push(pattern);
-    }
-
-    if !langs.is_empty() {
-        let conditions: Vec<String> = (0..langs.len()).map(|_| "language = ?".to_string()).collect();
-        sql.push_str(&format!(" AND ({})", conditions.join(" OR ")));
-        params.extend(langs.iter().map(|s| s.to_string()));
-    }
-
-    if !categories.is_empty() {
-        let conditions: Vec<String> = (0..categories.len()).map(|_| "category = ?".to_string()).collect();
-        sql.push_str(&format!(" AND ({})", conditions.join(" OR ")));
-        params.extend(categories.iter().map(|s| s.to_string()));
-    }
-
-    sql.push_str(" ORDER BY title");
+    let (sql, params) = match build_filter_clauses(criteria) {
+        Some((where_clause, params)) => (format!("{base} AND {where_clause} ORDER BY title"), params),
+        None => (format!("{base} ORDER BY title"), vec![]),
+    };
 
     let mut query_builder = sqlx::query_as::<_, BookRow>(&sql);
     for param in &params {
@@ -167,7 +125,10 @@ impl Into<BookMetadata> for BookRow {
     }
 }
 
-pub async fn insert_book(pool: &SqlitePool, data: &BookRegisteredDataV1) -> Result<(), sqlx::Error> {
+pub async fn insert_book<'e, E>(executor: E, data: &BookRegisteredDataV1) -> Result<(), sqlx::Error>
+where
+    E: sqlx::Executor<'e, Database = sqlx::Sqlite>,
+{
     let query_text = build_query_text(data);
 
     sqlx::query(
@@ -200,7 +161,7 @@ pub async fn insert_book(pool: &SqlitePool, data: &BookRegisteredDataV1) -> Resu
     .bind(&data.category)
     .bind(&data.tags)
     .bind(&query_text)
-    .execute(pool)
+    .execute(executor)
     .await?;
 
     Ok(())
@@ -252,31 +213,24 @@ mod tests {
 
     async fn setup_pool() -> SqlitePool {
         let pool = SqlitePool::connect("sqlite::memory:").await.unwrap();
-        sqlx::query(
-            "CREATE TABLE books (
-                id          TEXT PRIMARY KEY NOT NULL,
-                filename    TEXT NOT NULL,
-                name        TEXT NOT NULL,
-                date        TEXT NOT NULL,
-                flavour     TEXT NOT NULL,
-                title       TEXT NOT NULL,
-                description TEXT NOT NULL,
-                language    TEXT NOT NULL,
-                creator     TEXT NOT NULL,
-                publisher   TEXT NOT NULL,
-                category    TEXT NOT NULL,
-                tags        TEXT NOT NULL,
-                query_text  TEXT NOT NULL
-            )",
-        )
-        .execute(&pool)
-        .await
-        .unwrap();
+        sqlx::query(include_str!("schema.sql")).execute(&pool).await.unwrap();
+        sqlx::query("INSERT INTO nodes (id, local) VALUES ('remote-node', FALSE)")
+            .execute(&pool)
+            .await
+            .unwrap();
         pool
     }
 
+    async fn insert_remote_holding(pool: &SqlitePool, book_id: &str) {
+        sqlx::query("INSERT OR IGNORE INTO holdings (book_id, node_id) VALUES (?, 'remote-node')")
+            .bind(book_id)
+            .execute(pool)
+            .await
+            .unwrap();
+    }
+
     #[tokio::test]
-    async fn list_books_filtered_matches_query_substring() {
+    async fn list_remote_books_filtered_matches_query_substring() {
         let pool = setup_pool().await;
         insert_book(
             &pool,
@@ -284,14 +238,16 @@ mod tests {
         )
         .await
         .unwrap();
+        insert_remote_holding(&pool, "id-1").await;
         insert_book(
             &pool,
             &test_data("id-2", "Cooking", "Recipes from France", "fra", "cooking"),
         )
         .await
         .unwrap();
+        insert_remote_holding(&pool, "id-2").await;
 
-        let results = list_books_filtered(
+        let results = list_remote_books_filtered(
             &pool,
             FilterCriteria {
                 query: Some("golf"),
@@ -307,7 +263,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn list_books_filtered_matches_language() {
+    async fn list_remote_books_filtered_matches_language() {
         let pool = setup_pool().await;
         insert_book(
             &pool,
@@ -315,14 +271,16 @@ mod tests {
         )
         .await
         .unwrap();
+        insert_remote_holding(&pool, "id-1").await;
         insert_book(
             &pool,
             &test_data("id-2", "Cuisine", "Recettes de France", "fra", "cooking"),
         )
         .await
         .unwrap();
+        insert_remote_holding(&pool, "id-2").await;
 
-        let results = list_books_filtered(
+        let results = list_remote_books_filtered(
             &pool,
             FilterCriteria {
                 query: None,
@@ -338,7 +296,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn list_books_filtered_matches_any_language_in_comma_list() {
+    async fn list_remote_books_filtered_matches_any_language_in_comma_list() {
         let pool = setup_pool().await;
         insert_book(
             &pool,
@@ -346,20 +304,23 @@ mod tests {
         )
         .await
         .unwrap();
+        insert_remote_holding(&pool, "id-1").await;
         insert_book(
             &pool,
             &test_data("id-2", "Cuisine", "Recettes de France", "fra", "cooking"),
         )
         .await
         .unwrap();
+        insert_remote_holding(&pool, "id-2").await;
         insert_book(
             &pool,
             &test_data("id-3", "Kochen", "Deutsche Rezepte", "deu", "cooking"),
         )
         .await
         .unwrap();
+        insert_remote_holding(&pool, "id-3").await;
 
-        let results = list_books_filtered(
+        let results = list_remote_books_filtered(
             &pool,
             FilterCriteria {
                 query: None,
@@ -377,7 +338,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn list_books_filtered_combines_query_and_language() {
+    async fn list_remote_books_filtered_combines_query_and_language() {
         let pool = setup_pool().await;
         insert_book(
             &pool,
@@ -385,14 +346,16 @@ mod tests {
         )
         .await
         .unwrap();
+        insert_remote_holding(&pool, "id-1").await;
         insert_book(
             &pool,
             &test_data("id-2", "Golf en France", "A book about golf", "fra", "sports"),
         )
         .await
         .unwrap();
+        insert_remote_holding(&pool, "id-2").await;
 
-        let results = list_books_filtered(
+        let results = list_remote_books_filtered(
             &pool,
             FilterCriteria {
                 query: Some("golf"),
@@ -408,7 +371,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn list_books_filtered_returns_all_when_no_criteria() {
+    async fn list_remote_books_filtered_returns_all_when_no_criteria() {
         let pool = setup_pool().await;
         insert_book(
             &pool,
@@ -416,14 +379,16 @@ mod tests {
         )
         .await
         .unwrap();
+        insert_remote_holding(&pool, "id-1").await;
         insert_book(
             &pool,
             &test_data("id-2", "Cuisine", "Recettes de France", "fra", "cooking"),
         )
         .await
         .unwrap();
+        insert_remote_holding(&pool, "id-2").await;
 
-        let results = list_books_filtered(
+        let results = list_remote_books_filtered(
             &pool,
             FilterCriteria {
                 query: None,
@@ -438,7 +403,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn list_books_filtered_is_case_insensitive() {
+    async fn list_remote_books_filtered_is_case_insensitive() {
         let pool = setup_pool().await;
         insert_book(
             &pool,
@@ -446,8 +411,9 @@ mod tests {
         )
         .await
         .unwrap();
+        insert_remote_holding(&pool, "id-1").await;
 
-        let results = list_books_filtered(
+        let results = list_remote_books_filtered(
             &pool,
             FilterCriteria {
                 query: Some("GOLF"),
@@ -462,7 +428,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn list_books_filtered_escapes_like_special_chars() {
+    async fn list_remote_books_filtered_escapes_like_special_chars() {
         let pool = setup_pool().await;
         insert_book(
             &pool,
@@ -470,14 +436,16 @@ mod tests {
         )
         .await
         .unwrap();
+        insert_remote_holding(&pool, "id-1").await;
         insert_book(
             &pool,
             &test_data("id-2", "Golf Rules", "A book about golf", "eng", "sports"),
         )
         .await
         .unwrap();
+        insert_remote_holding(&pool, "id-2").await;
 
-        let results = list_books_filtered(
+        let results = list_remote_books_filtered(
             &pool,
             FilterCriteria {
                 query: Some("100%"),
@@ -493,7 +461,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn list_books_filtered_matches_category() {
+    async fn list_remote_books_filtered_matches_category() {
         let pool = setup_pool().await;
         insert_book(
             &pool,
@@ -501,14 +469,16 @@ mod tests {
         )
         .await
         .unwrap();
+        insert_remote_holding(&pool, "id-1").await;
         insert_book(
             &pool,
             &test_data("id-2", "Cuisine", "Recipes from France", "eng", "cooking"),
         )
         .await
         .unwrap();
+        insert_remote_holding(&pool, "id-2").await;
 
-        let results = list_books_filtered(
+        let results = list_remote_books_filtered(
             &pool,
             FilterCriteria {
                 query: None,
@@ -524,7 +494,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn list_books_filtered_matches_any_category_in_comma_list() {
+    async fn list_remote_books_filtered_matches_any_category_in_comma_list() {
         let pool = setup_pool().await;
         insert_book(
             &pool,
@@ -532,20 +502,23 @@ mod tests {
         )
         .await
         .unwrap();
+        insert_remote_holding(&pool, "id-1").await;
         insert_book(
             &pool,
             &test_data("id-2", "Cuisine", "Recipes from France", "eng", "cooking"),
         )
         .await
         .unwrap();
+        insert_remote_holding(&pool, "id-2").await;
         insert_book(
             &pool,
             &test_data("id-3", "Physics", "Intro to physics", "eng", "science"),
         )
         .await
         .unwrap();
+        insert_remote_holding(&pool, "id-3").await;
 
-        let results = list_books_filtered(
+        let results = list_remote_books_filtered(
             &pool,
             FilterCriteria {
                 query: None,
@@ -563,7 +536,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn list_books_filtered_combines_query_language_and_category() {
+    async fn list_remote_books_filtered_combines_query_language_and_category() {
         let pool = setup_pool().await;
         insert_book(
             &pool,
@@ -571,20 +544,23 @@ mod tests {
         )
         .await
         .unwrap();
+        insert_remote_holding(&pool, "id-1").await;
         insert_book(
             &pool,
             &test_data("id-2", "Golf en France", "A book about golf", "fra", "sports"),
         )
         .await
         .unwrap();
+        insert_remote_holding(&pool, "id-2").await;
         insert_book(
             &pool,
             &test_data("id-3", "Golf Cooking", "A book about golf", "fra", "cooking"),
         )
         .await
         .unwrap();
+        insert_remote_holding(&pool, "id-3").await;
 
-        let results = list_books_filtered(
+        let results = list_remote_books_filtered(
             &pool,
             FilterCriteria {
                 query: Some("golf"),

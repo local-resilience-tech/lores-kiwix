@@ -1,4 +1,6 @@
 pub mod books;
+pub mod holdings;
+pub mod nodes;
 
 use lores_app_node::ProjectionDb;
 use sqlx::SqlitePool;

@@ -12,6 +12,8 @@ pub enum LoResBookSource {
 pub struct LoResBook {
     pub book: BookMetadata,
     pub source: LoResBookSource,
+    /// Node IDs holding this book; empty for local books.
+    pub holdings: Vec<String>,
 }
 
 impl Into<LoResBook> for BookMetadata {
@@ -19,6 +21,7 @@ impl Into<LoResBook> for BookMetadata {
         LoResBook {
             book: self,
             source: LoResBookSource::Local,
+            holdings: Vec::new(),
         }
     }
 }
@@ -28,6 +31,7 @@ impl Into<LoResBook> for BookRow {
         LoResBook {
             book: self.into(),
             source: LoResBookSource::Remote,
+            holdings: Vec::new(),
         }
     }
 }

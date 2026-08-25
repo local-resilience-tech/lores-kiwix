@@ -109,6 +109,10 @@ pub fn build_entry(lores_book: &LoResBook, feed: &Element) -> Element {
         }
         LoResBookSource::Remote => {
             entry.append_new_child((ATOM_NS, "source")).set_text("remote");
+            let holdings_el = entry.append_new_child((ATOM_NS, "holdings"));
+            for node_id in &lores_book.holdings {
+                holdings_el.append_new_child((ATOM_NS, "holding")).set_text(node_id);
+            }
         }
     }
 
@@ -220,6 +224,7 @@ mod tests {
               <link href="/content/abc123" type="text/html" />
               <dc:issued>2026-06-01T00:00:00Z</dc:issued>
               <source>remote</source>
+              <holdings />
             </entry>
         "#};
 
@@ -263,6 +268,7 @@ mod tests {
                 </author>
                 <dc:issued>2026-06-01T00:00:00Z</dc:issued>
                 <source>remote</source>
+                <holdings />
               </entry>
             </feed>
         "#};

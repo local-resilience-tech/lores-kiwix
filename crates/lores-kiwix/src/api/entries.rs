@@ -6,11 +6,11 @@ use axum::{
 };
 use libkiwix_rust::Filter;
 
-use crate::utilities::pagination::Paginator;
+use crate::utilities::{filter::FilterCriteria, pagination::Paginator};
 use crate::xml::entries::{build_entry, build_feed_root};
 use crate::xml::render_xml;
 use crate::{api::ApiState, proxy::proxy_error};
-use crate::{projection::books, utilities::book::LoResBook};
+use crate::{projection::{books, holdings}, utilities::book::{LoResBook, LoResBookSource}};
 
 /// Serve the `/catalog/v2/entries` endpoint directly from the local libkiwix
 /// library instead of proxying to the upstream kiwix server.
@@ -45,9 +45,9 @@ pub async fn handler(State(state): State<ApiState>, req: Request) -> Response {
     };
 
     let extra_remote_books = if lib_exhausted {
-        let remote_books = books::list_books_filtered(
+        let remote_books = books::list_remote_books_filtered(
             &state.pool,
-            books::FilterCriteria {
+            FilterCriteria {
                 query: filter.query().as_deref(),
                 lang: filter.lang().as_deref(),
                 category: filter.category().as_deref(),
@@ -62,12 +62,18 @@ pub async fn handler(State(state): State<ApiState>, req: Request) -> Response {
 
     let extra_page = params.paginator.tail(book_ids.len()).page(&extra_remote_books);
 
+    let extra_page_ids: Vec<String> = extra_page.items.iter().map(|b| b.id.clone()).collect();
+    let holdings_map = holdings::fetch_holdings_for_books(&state.pool, &extra_page_ids)
+        .await
+        .unwrap_or_default();
+    let extra_page_books: Vec<LoResBook> = extra_page.items.iter().map(|book| LoResBook {
+        holdings: holdings_map.get(&book.id).cloned().unwrap_or_default(),
+        source: LoResBookSource::Remote,
+        book: book.clone().into(),
+    }).collect();
+
     let result = CatalogueEntriesResult {
-        books: page_books
-            .iter()
-            .chain(&extra_page.items.iter().cloned().map(Into::into).collect::<Vec<_>>())
-            .cloned()
-            .collect(),
+        books: page_books.iter().cloned().chain(extra_page_books).collect(),
         total: book_ids.len() + extra_remote_books.len(),
         start: params.paginator.start_index(book_ids.len() + extra_remote_books.len()),
         items_per_page: page_books.len() + extra_page.items.len(),
