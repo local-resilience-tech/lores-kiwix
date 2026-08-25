@@ -5,7 +5,7 @@ use sqlx::SqlitePool;
 
 use crate::projection::{books, holdings};
 
-pub fn register_event_handlers(node: &LoresKiwixNode, pool: SqlitePool) {
+pub fn register(node: &LoresKiwixNode, pool: SqlitePool) {
     let mut rx = node.subscribe();
 
     tokio::spawn(async move {
