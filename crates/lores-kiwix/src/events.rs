@@ -1,7 +1,7 @@
 use crate::node::{LoresKiwixNode, operations::AppOperation};
 use sqlx::SqlitePool;
 
-use crate::projection::zims;
+use crate::projection::books;
 
 pub fn register_event_handlers(node: &LoresKiwixNode, pool: SqlitePool) {
     let mut rx = node.subscribe();
@@ -13,8 +13,8 @@ pub fn register_event_handlers(node: &LoresKiwixNode, pool: SqlitePool) {
                     println!("processing op: {:?}", node_op);
 
                     match node_op.op {
-                        AppOperation::ZimRegisteredV1(data) => {
-                            if let Err(err) = zims::insert_zim(&pool, &data).await {
+                        AppOperation::BookRegisteredV1(data) => {
+                            if let Err(err) = books::insert_book(&pool, &data).await {
                                 tracing::error!(error = %err, "Failed to insert ZIM into projection");
                             }
                         }

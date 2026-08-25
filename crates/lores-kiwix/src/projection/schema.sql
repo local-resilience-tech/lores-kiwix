@@ -4,7 +4,7 @@
 -- Edit this file freely — the framework detects changes via a content hash
 -- and will drop and rebuild the database, then replay all operations.
 
-CREATE TABLE zims (
+CREATE TABLE books (
     id          TEXT PRIMARY KEY NOT NULL,
     filename    TEXT NOT NULL,
     name        TEXT NOT NULL,

@@ -1,4 +1,4 @@
-pub mod zims;
+pub mod books;
 
 use lores_app_node::ProjectionDb;
 use sqlx::SqlitePool;

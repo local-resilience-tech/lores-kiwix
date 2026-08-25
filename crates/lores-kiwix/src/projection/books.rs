@@ -1,12 +1,11 @@
 use libkiwix_rust::BookMetadata;
 use sqlx::{FromRow, SqlitePool};
 
-use crate::node::operations::ZimRegisteredDataV1;
+use crate::node::operations::BookRegisteredDataV1;
 
-/// A row from the `zims` projection table.
 #[derive(Debug, Clone, FromRow, Default)]
 #[allow(dead_code)]
-pub struct Zim {
+pub struct BookRow {
     pub id: String,
     pub filename: String,
     pub name: String,
@@ -21,7 +20,7 @@ pub struct Zim {
     pub tags: String,
 }
 
-const SELECT_ZIM_COLUMNS: &str = "
+const SELECT_BOOK_COLUMNS: &str = "
     id,
     filename,
     name,
@@ -36,16 +35,16 @@ const SELECT_ZIM_COLUMNS: &str = "
     tags
 ";
 
-/// Return every ZIM recorded in the projection database.
-pub async fn list_zims(pool: &SqlitePool) -> Result<Vec<Zim>, sqlx::Error> {
-    sqlx::query_as::<_, Zim>(&format!("SELECT {SELECT_ZIM_COLUMNS} FROM zims ORDER BY title"))
+/// Return every book recorded in the projection database.
+pub async fn list_books(pool: &SqlitePool) -> Result<Vec<BookRow>, sqlx::Error> {
+    sqlx::query_as::<_, BookRow>(&format!("SELECT {SELECT_BOOK_COLUMNS} FROM books ORDER BY title"))
         .fetch_all(pool)
         .await
 }
 
 /// Return distinct non-empty categories recorded in the projection database.
 pub async fn list_categories(pool: &SqlitePool) -> Result<Vec<String>, sqlx::Error> {
-    sqlx::query_scalar("SELECT DISTINCT category FROM zims WHERE category != '' ORDER BY category")
+    sqlx::query_scalar("SELECT DISTINCT category FROM books WHERE category != '' ORDER BY category")
         .fetch_all(pool)
         .await
 }
@@ -55,10 +54,9 @@ pub async fn list_categories(pool: &SqlitePool) -> Result<Vec<String>, sqlx::Err
 /// The `language` column may be comma-separated (e.g. `"eng,fra"`), so each
 /// code is counted individually.
 pub async fn list_languages(pool: &SqlitePool) -> Result<Vec<(String, u32)>, sqlx::Error> {
-    let rows: Vec<String> =
-        sqlx::query_scalar("SELECT language FROM zims WHERE language != ''")
-            .fetch_all(pool)
-            .await?;
+    let rows: Vec<String> = sqlx::query_scalar("SELECT language FROM books WHERE language != ''")
+        .fetch_all(pool)
+        .await?;
 
     let mut counts: std::collections::HashMap<String, u32> = std::collections::HashMap::new();
     for row in rows {
@@ -79,7 +77,7 @@ pub struct FilterCriteria<'a> {
     pub category: Option<&'a str>,
 }
 
-/// Return ZIMs matching `criteria`.
+/// Return books matching `criteria`.
 ///
 /// The text query is matched against the combined `query_text` column as a
 /// substring. The language and category filters match any value in their
@@ -88,7 +86,7 @@ pub struct FilterCriteria<'a> {
 /// The text match is a simplified stand-in for libkiwix's Xapian-backed search.
 /// It is case-insensitive for ASCII and uses `LIKE` with an escape character so
 /// literal `%`, `_` and `\` characters in the query are treated literally.
-pub async fn list_zims_filtered(pool: &SqlitePool, criteria: FilterCriteria<'_>) -> Result<Vec<Zim>, sqlx::Error> {
+pub async fn list_books_filtered(pool: &SqlitePool, criteria: FilterCriteria<'_>) -> Result<Vec<BookRow>, sqlx::Error> {
     let query = criteria.query.map(|q| q.trim()).filter(|q| !q.is_empty());
     let langs: Vec<&str> = criteria
         .lang
@@ -100,10 +98,10 @@ pub async fn list_zims_filtered(pool: &SqlitePool, criteria: FilterCriteria<'_>)
         .unwrap_or_default();
 
     if query.is_none() && langs.is_empty() && categories.is_empty() {
-        return list_zims(pool).await;
+        return list_books(pool).await;
     }
 
-    let mut sql = format!("SELECT {SELECT_ZIM_COLUMNS} FROM zims WHERE 1=1");
+    let mut sql = format!("SELECT {SELECT_BOOK_COLUMNS} FROM books WHERE 1=1");
     let mut params: Vec<String> = Vec::new();
 
     if let Some(query) = query {
@@ -133,7 +131,7 @@ pub async fn list_zims_filtered(pool: &SqlitePool, criteria: FilterCriteria<'_>)
 
     sql.push_str(" ORDER BY title");
 
-    let mut query_builder = sqlx::query_as::<_, Zim>(&sql);
+    let mut query_builder = sqlx::query_as::<_, BookRow>(&sql);
     for param in &params {
         query_builder = query_builder.bind(param);
     }
@@ -141,7 +139,7 @@ pub async fn list_zims_filtered(pool: &SqlitePool, criteria: FilterCriteria<'_>)
     query_builder.fetch_all(pool).await
 }
 
-impl Into<BookMetadata> for Zim {
+impl Into<BookMetadata> for BookRow {
     /// Convert this projection row into a libkiwix `BookMetadata` value.
     ///
     /// Fields that are not stored in the projection are left blank or zeroed,
@@ -169,11 +167,11 @@ impl Into<BookMetadata> for Zim {
     }
 }
 
-pub async fn insert_zim(pool: &SqlitePool, data: &ZimRegisteredDataV1) -> Result<(), sqlx::Error> {
+pub async fn insert_book(pool: &SqlitePool, data: &BookRegisteredDataV1) -> Result<(), sqlx::Error> {
     let query_text = build_query_text(data);
 
     sqlx::query(
-        "INSERT OR REPLACE INTO zims (
+        "INSERT OR REPLACE INTO books (
             id,
             filename,
             name,
@@ -210,7 +208,7 @@ pub async fn insert_zim(pool: &SqlitePool, data: &ZimRegisteredDataV1) -> Result
 
 /// Build a single lowercase string containing all text fields that libkiwix
 /// indexes for full-text search.
-fn build_query_text(data: &ZimRegisteredDataV1) -> String {
+fn build_query_text(data: &BookRegisteredDataV1) -> String {
     [
         &data.title,
         &data.description,
@@ -232,17 +230,11 @@ fn build_query_text(data: &ZimRegisteredDataV1) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::node::operations::ZimRegisteredDataV1;
+    use crate::node::operations::BookRegisteredDataV1;
     use sqlx::SqlitePool;
 
-    fn test_data(
-        id: &str,
-        title: &str,
-        description: &str,
-        language: &str,
-        category: &str,
-    ) -> ZimRegisteredDataV1 {
-        ZimRegisteredDataV1 {
+    fn test_data(id: &str, title: &str, description: &str, language: &str, category: &str) -> BookRegisteredDataV1 {
+        BookRegisteredDataV1 {
             filename: format!("{id}.zim"),
             book_id: id.to_string(),
             name: id.to_string(),
@@ -261,7 +253,7 @@ mod tests {
     async fn setup_pool() -> SqlitePool {
         let pool = SqlitePool::connect("sqlite::memory:").await.unwrap();
         sqlx::query(
-            "CREATE TABLE zims (
+            "CREATE TABLE books (
                 id          TEXT PRIMARY KEY NOT NULL,
                 filename    TEXT NOT NULL,
                 name        TEXT NOT NULL,
@@ -284,16 +276,22 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn list_zims_filtered_matches_query_substring() {
+    async fn list_books_filtered_matches_query_substring() {
         let pool = setup_pool().await;
-        insert_zim(&pool, &test_data("id-1", "Golf Rules", "A book about golf", "eng", "sports"))
-            .await
-            .unwrap();
-        insert_zim(&pool, &test_data("id-2", "Cooking", "Recipes from France", "fra", "cooking"))
-            .await
-            .unwrap();
+        insert_book(
+            &pool,
+            &test_data("id-1", "Golf Rules", "A book about golf", "eng", "sports"),
+        )
+        .await
+        .unwrap();
+        insert_book(
+            &pool,
+            &test_data("id-2", "Cooking", "Recipes from France", "fra", "cooking"),
+        )
+        .await
+        .unwrap();
 
-        let results = list_zims_filtered(
+        let results = list_books_filtered(
             &pool,
             FilterCriteria {
                 query: Some("golf"),
@@ -309,16 +307,22 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn list_zims_filtered_matches_language() {
+    async fn list_books_filtered_matches_language() {
         let pool = setup_pool().await;
-        insert_zim(&pool, &test_data("id-1", "Golf Rules", "A book about golf", "eng", "sports"))
-            .await
-            .unwrap();
-        insert_zim(&pool, &test_data("id-2", "Cuisine", "Recettes de France", "fra", "cooking"))
-            .await
-            .unwrap();
+        insert_book(
+            &pool,
+            &test_data("id-1", "Golf Rules", "A book about golf", "eng", "sports"),
+        )
+        .await
+        .unwrap();
+        insert_book(
+            &pool,
+            &test_data("id-2", "Cuisine", "Recettes de France", "fra", "cooking"),
+        )
+        .await
+        .unwrap();
 
-        let results = list_zims_filtered(
+        let results = list_books_filtered(
             &pool,
             FilterCriteria {
                 query: None,
@@ -334,19 +338,28 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn list_zims_filtered_matches_any_language_in_comma_list() {
+    async fn list_books_filtered_matches_any_language_in_comma_list() {
         let pool = setup_pool().await;
-        insert_zim(&pool, &test_data("id-1", "Golf Rules", "A book about golf", "eng", "sports"))
-            .await
-            .unwrap();
-        insert_zim(&pool, &test_data("id-2", "Cuisine", "Recettes de France", "fra", "cooking"))
-            .await
-            .unwrap();
-        insert_zim(&pool, &test_data("id-3", "Kochen", "Deutsche Rezepte", "deu", "cooking"))
-            .await
-            .unwrap();
+        insert_book(
+            &pool,
+            &test_data("id-1", "Golf Rules", "A book about golf", "eng", "sports"),
+        )
+        .await
+        .unwrap();
+        insert_book(
+            &pool,
+            &test_data("id-2", "Cuisine", "Recettes de France", "fra", "cooking"),
+        )
+        .await
+        .unwrap();
+        insert_book(
+            &pool,
+            &test_data("id-3", "Kochen", "Deutsche Rezepte", "deu", "cooking"),
+        )
+        .await
+        .unwrap();
 
-        let results = list_zims_filtered(
+        let results = list_books_filtered(
             &pool,
             FilterCriteria {
                 query: None,
@@ -364,16 +377,22 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn list_zims_filtered_combines_query_and_language() {
+    async fn list_books_filtered_combines_query_and_language() {
         let pool = setup_pool().await;
-        insert_zim(&pool, &test_data("id-1", "Golf Rules", "A book about golf", "eng", "sports"))
-            .await
-            .unwrap();
-        insert_zim(&pool, &test_data("id-2", "Golf en France", "A book about golf", "fra", "sports"))
-            .await
-            .unwrap();
+        insert_book(
+            &pool,
+            &test_data("id-1", "Golf Rules", "A book about golf", "eng", "sports"),
+        )
+        .await
+        .unwrap();
+        insert_book(
+            &pool,
+            &test_data("id-2", "Golf en France", "A book about golf", "fra", "sports"),
+        )
+        .await
+        .unwrap();
 
-        let results = list_zims_filtered(
+        let results = list_books_filtered(
             &pool,
             FilterCriteria {
                 query: Some("golf"),
@@ -389,16 +408,22 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn list_zims_filtered_returns_all_when_no_criteria() {
+    async fn list_books_filtered_returns_all_when_no_criteria() {
         let pool = setup_pool().await;
-        insert_zim(&pool, &test_data("id-1", "Golf Rules", "A book about golf", "eng", "sports"))
-            .await
-            .unwrap();
-        insert_zim(&pool, &test_data("id-2", "Cuisine", "Recettes de France", "fra", "cooking"))
-            .await
-            .unwrap();
+        insert_book(
+            &pool,
+            &test_data("id-1", "Golf Rules", "A book about golf", "eng", "sports"),
+        )
+        .await
+        .unwrap();
+        insert_book(
+            &pool,
+            &test_data("id-2", "Cuisine", "Recettes de France", "fra", "cooking"),
+        )
+        .await
+        .unwrap();
 
-        let results = list_zims_filtered(
+        let results = list_books_filtered(
             &pool,
             FilterCriteria {
                 query: None,
@@ -413,13 +438,16 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn list_zims_filtered_is_case_insensitive() {
+    async fn list_books_filtered_is_case_insensitive() {
         let pool = setup_pool().await;
-        insert_zim(&pool, &test_data("id-1", "Golf Rules", "A book about golf", "eng", "sports"))
-            .await
-            .unwrap();
+        insert_book(
+            &pool,
+            &test_data("id-1", "Golf Rules", "A book about golf", "eng", "sports"),
+        )
+        .await
+        .unwrap();
 
-        let results = list_zims_filtered(
+        let results = list_books_filtered(
             &pool,
             FilterCriteria {
                 query: Some("GOLF"),
@@ -434,16 +462,22 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn list_zims_filtered_escapes_like_special_chars() {
+    async fn list_books_filtered_escapes_like_special_chars() {
         let pool = setup_pool().await;
-        insert_zim(&pool, &test_data("id-1", "100% Golf", "A book about golf", "eng", "sports"))
-            .await
-            .unwrap();
-        insert_zim(&pool, &test_data("id-2", "Golf Rules", "A book about golf", "eng", "sports"))
-            .await
-            .unwrap();
+        insert_book(
+            &pool,
+            &test_data("id-1", "100% Golf", "A book about golf", "eng", "sports"),
+        )
+        .await
+        .unwrap();
+        insert_book(
+            &pool,
+            &test_data("id-2", "Golf Rules", "A book about golf", "eng", "sports"),
+        )
+        .await
+        .unwrap();
 
-        let results = list_zims_filtered(
+        let results = list_books_filtered(
             &pool,
             FilterCriteria {
                 query: Some("100%"),
@@ -459,16 +493,22 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn list_zims_filtered_matches_category() {
+    async fn list_books_filtered_matches_category() {
         let pool = setup_pool().await;
-        insert_zim(&pool, &test_data("id-1", "Golf Rules", "A book about golf", "eng", "sports"))
-            .await
-            .unwrap();
-        insert_zim(&pool, &test_data("id-2", "Cuisine", "Recipes from France", "eng", "cooking"))
-            .await
-            .unwrap();
+        insert_book(
+            &pool,
+            &test_data("id-1", "Golf Rules", "A book about golf", "eng", "sports"),
+        )
+        .await
+        .unwrap();
+        insert_book(
+            &pool,
+            &test_data("id-2", "Cuisine", "Recipes from France", "eng", "cooking"),
+        )
+        .await
+        .unwrap();
 
-        let results = list_zims_filtered(
+        let results = list_books_filtered(
             &pool,
             FilterCriteria {
                 query: None,
@@ -484,19 +524,28 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn list_zims_filtered_matches_any_category_in_comma_list() {
+    async fn list_books_filtered_matches_any_category_in_comma_list() {
         let pool = setup_pool().await;
-        insert_zim(&pool, &test_data("id-1", "Golf Rules", "A book about golf", "eng", "sports"))
-            .await
-            .unwrap();
-        insert_zim(&pool, &test_data("id-2", "Cuisine", "Recipes from France", "eng", "cooking"))
-            .await
-            .unwrap();
-        insert_zim(&pool, &test_data("id-3", "Physics", "Intro to physics", "eng", "science"))
-            .await
-            .unwrap();
+        insert_book(
+            &pool,
+            &test_data("id-1", "Golf Rules", "A book about golf", "eng", "sports"),
+        )
+        .await
+        .unwrap();
+        insert_book(
+            &pool,
+            &test_data("id-2", "Cuisine", "Recipes from France", "eng", "cooking"),
+        )
+        .await
+        .unwrap();
+        insert_book(
+            &pool,
+            &test_data("id-3", "Physics", "Intro to physics", "eng", "science"),
+        )
+        .await
+        .unwrap();
 
-        let results = list_zims_filtered(
+        let results = list_books_filtered(
             &pool,
             FilterCriteria {
                 query: None,
@@ -514,28 +563,28 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn list_zims_filtered_combines_query_language_and_category() {
+    async fn list_books_filtered_combines_query_language_and_category() {
         let pool = setup_pool().await;
-        insert_zim(
+        insert_book(
             &pool,
             &test_data("id-1", "Golf Rules", "A book about golf", "eng", "sports"),
         )
         .await
         .unwrap();
-        insert_zim(
+        insert_book(
             &pool,
             &test_data("id-2", "Golf en France", "A book about golf", "fra", "sports"),
         )
         .await
         .unwrap();
-        insert_zim(
+        insert_book(
             &pool,
             &test_data("id-3", "Golf Cooking", "A book about golf", "fra", "cooking"),
         )
         .await
         .unwrap();
 
-        let results = list_zims_filtered(
+        let results = list_books_filtered(
             &pool,
             FilterCriteria {
                 query: Some("golf"),
