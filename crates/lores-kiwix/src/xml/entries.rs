@@ -181,8 +181,8 @@ mod tests {
         s.lines().map(str::trim).filter(|l| !l.is_empty()).collect()
     }
 
-    fn make_zim(id: &str) -> crate::projection::zims::Zim {
-        crate::projection::zims::Zim {
+    fn make_zim(id: &str) -> crate::projection::books::Zim {
+        crate::projection::books::Zim {
             id: id.to_string(),
             filename: format!("{id}.zim"),
             date: "2026-06-01".to_string(),
@@ -190,18 +190,18 @@ mod tests {
             description: "A test description.".to_string(),
             language: "eng".to_string(),
             creator: "Test Author".to_string(),
-            ..crate::projection::zims::Zim::default()
+            ..crate::projection::books::Zim::default()
         }
     }
 
     #[test]
     fn build_entry_renders_xml() {
-        let zim = crate::projection::zims::Zim {
+        let zim = crate::projection::books::Zim {
             id: "abc123".to_string(),
             filename: "abc123.zim".to_string(),
             date: "2026-06-01".to_string(),
             flavour: "nopic".to_string(),
-            ..crate::projection::zims::Zim::default()
+            ..crate::projection::books::Zim::default()
         };
         let feed = Element::new((ATOM_NS, "feed"));
 

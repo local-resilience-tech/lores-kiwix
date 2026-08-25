@@ -10,7 +10,7 @@ use crate::utilities::pagination::Paginator;
 use crate::xml::entries::{build_entry, build_feed_root};
 use crate::xml::render_xml;
 use crate::{api::ApiState, proxy::proxy_error};
-use crate::{projection::zims, utilities::book::LoResBook};
+use crate::{projection::books, utilities::book::LoResBook};
 
 /// Serve the `/catalog/v2/entries` endpoint directly from the local libkiwix
 /// library instead of proxying to the upstream kiwix server.
@@ -45,9 +45,9 @@ pub async fn handler(State(state): State<ApiState>, req: Request) -> Response {
     };
 
     let unique_extra_zims = if lib_exhausted {
-        let extra_zims = zims::list_zims_filtered(
+        let extra_zims = books::list_books_filtered(
             &state.pool,
-            zims::FilterCriteria {
+            books::FilterCriteria {
                 query: filter.query().as_deref(),
                 lang: filter.lang().as_deref(),
                 category: filter.category().as_deref(),
@@ -99,7 +99,7 @@ fn fetch_page_books(library: &mut libkiwix_rust::Library, page: &[String]) -> Ve
 }
 
 /// Return the extra ZIMs whose IDs do not already appear in the libkiwix results.
-fn filter_duplicate_zims(extra_zims: &[zims::Zim], book_ids: &[String]) -> Vec<zims::Zim> {
+fn filter_duplicate_zims(extra_zims: &[books::Zim], book_ids: &[String]) -> Vec<books::Zim> {
     let ids: std::collections::HashSet<&str> = book_ids.iter().map(|id| id.as_str()).collect();
     extra_zims
         .iter()

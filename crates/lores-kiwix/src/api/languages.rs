@@ -7,7 +7,7 @@ use axum::{
 use std::collections::HashMap;
 
 use crate::api::ApiState;
-use crate::projection::zims;
+use crate::projection::books;
 use crate::proxy::proxy_error;
 use crate::xml::languages::{build_feed_root, build_language};
 use crate::xml::render_xml;
@@ -18,7 +18,7 @@ pub async fn handler(State(state): State<ApiState>) -> Response {
         libkiwix_rust::library_get_books_languages(&library)
     };
 
-    let projection_lang_counts = match zims::list_languages(&state.pool).await {
+    let projection_lang_counts = match books::list_languages(&state.pool).await {
         Ok(langs) => langs,
         Err(err) => {
             tracing::error!(error = %err, "failed to query projection languages");

@@ -1,6 +1,6 @@
 use libkiwix_rust::BookMetadata;
 
-use crate::projection::zims::Zim;
+use crate::projection::books::Zim;
 
 #[derive(Clone)]
 pub enum LoResBookSource {
