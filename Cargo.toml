@@ -3,7 +3,6 @@ resolver = "3"
 members = [
     "crates/lores-kiwix",
     "crates/libkiwix-rust",
-    "crates/lores-kiwix-node",
 ]
 
 [workspace.dependencies]

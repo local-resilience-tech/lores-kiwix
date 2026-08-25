@@ -1,4 +1,4 @@
-use lores_kiwix_node::{LoresKiwixNode, operations::AppOperation};
+use crate::node::{LoresKiwixNode, operations::AppOperation};
 use sqlx::SqlitePool;
 
 use crate::projection::zims;

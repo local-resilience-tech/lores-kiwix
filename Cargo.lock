@@ -1179,22 +1179,14 @@ dependencies = [
  "elementtree",
  "indoc",
  "libkiwix-rust",
- "lores-kiwix-node",
+ "lores-app-node",
  "pretty_assertions",
  "reqwest",
+ "serde",
  "sqlx",
  "tokio",
  "tracing",
  "url",
-]
-
-[[package]]
-name = "lores-kiwix-node"
-version = "0.1.0"
-dependencies = [
- "lores-app-node",
- "serde",
- "sqlx",
 ]
 
 [[package]]

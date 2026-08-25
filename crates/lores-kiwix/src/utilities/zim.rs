@@ -1,5 +1,5 @@
 use libkiwix_rust::BookMetadata;
-use lores_kiwix_node::operations::ZimRegisteredDataV1;
+use crate::node::operations::ZimRegisteredDataV1;
 
 /// Build a `ZimRegisteredDataV1` from a filesystem path and the
 /// `BookMetadata` returned by libkiwix.
