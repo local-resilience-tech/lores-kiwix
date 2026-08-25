@@ -13,7 +13,7 @@ pub fn register_event_handlers(node: &LoresKiwixNode, pool: SqlitePool) {
                     println!("processing op: {:?}", node_op);
 
                     match node_op.op {
-                        AppOperation::ZimRegisteredV1(data) => {
+                        AppOperation::BookRegisteredV1(data) => {
                             if let Err(err) = zims::insert_zim(&pool, &data).await {
                                 tracing::error!(error = %err, "Failed to insert ZIM into projection");
                             }

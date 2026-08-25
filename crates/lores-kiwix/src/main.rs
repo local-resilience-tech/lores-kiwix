@@ -63,7 +63,7 @@ async fn main() {
     let _ = ready_rx.changed().await;
 
     for zim in &registered {
-        let op = AppOperation::ZimRegisteredV1(utilities::zim::registered_data_from_path_and_metadata(
+        let op = AppOperation::BookRegisteredV1(utilities::zim::registered_data_from_path_and_metadata(
             &zim.path,
             &zim.metadata,
         ));

@@ -1,7 +1,7 @@
 use libkiwix_rust::BookMetadata;
 use sqlx::{FromRow, SqlitePool};
 
-use crate::node::operations::ZimRegisteredDataV1;
+use crate::node::operations::BookRegisteredDataV1;
 
 /// A row from the `zims` projection table.
 #[derive(Debug, Clone, FromRow, Default)]
@@ -169,7 +169,7 @@ impl Into<BookMetadata> for Zim {
     }
 }
 
-pub async fn insert_zim(pool: &SqlitePool, data: &ZimRegisteredDataV1) -> Result<(), sqlx::Error> {
+pub async fn insert_zim(pool: &SqlitePool, data: &BookRegisteredDataV1) -> Result<(), sqlx::Error> {
     let query_text = build_query_text(data);
 
     sqlx::query(
@@ -210,7 +210,7 @@ pub async fn insert_zim(pool: &SqlitePool, data: &ZimRegisteredDataV1) -> Result
 
 /// Build a single lowercase string containing all text fields that libkiwix
 /// indexes for full-text search.
-fn build_query_text(data: &ZimRegisteredDataV1) -> String {
+fn build_query_text(data: &BookRegisteredDataV1) -> String {
     [
         &data.title,
         &data.description,
@@ -232,7 +232,7 @@ fn build_query_text(data: &ZimRegisteredDataV1) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::node::operations::ZimRegisteredDataV1;
+    use crate::node::operations::BookRegisteredDataV1;
     use sqlx::SqlitePool;
 
     fn test_data(
@@ -241,8 +241,8 @@ mod tests {
         description: &str,
         language: &str,
         category: &str,
-    ) -> ZimRegisteredDataV1 {
-        ZimRegisteredDataV1 {
+    ) -> BookRegisteredDataV1 {
+        BookRegisteredDataV1 {
             filename: format!("{id}.zim"),
             book_id: id.to_string(),
             name: id.to_string(),
