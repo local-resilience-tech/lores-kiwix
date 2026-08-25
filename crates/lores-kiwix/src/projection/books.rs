@@ -2,6 +2,7 @@ use libkiwix_rust::BookMetadata;
 use sqlx::{FromRow, SqlitePool};
 
 use crate::node::operations::BookRegisteredDataV1;
+use crate::utilities::filter::{build_filter_clauses, FilterCriteria};
 
 #[derive(Debug, Clone, FromRow, Default)]
 #[allow(dead_code)]
@@ -70,13 +71,6 @@ pub async fn list_languages(pool: &SqlitePool) -> Result<Vec<(String, u32)>, sql
     Ok(result)
 }
 
-/// Criteria for filtering extra ZIMs from the projection database.
-pub struct FilterCriteria<'a> {
-    pub query: Option<&'a str>,
-    pub lang: Option<&'a str>,
-    pub category: Option<&'a str>,
-}
-
 /// Return books matching `criteria`.
 ///
 /// The text query is matched against the combined `query_text` column as a
@@ -87,49 +81,11 @@ pub struct FilterCriteria<'a> {
 /// It is case-insensitive for ASCII and uses `LIKE` with an escape character so
 /// literal `%`, `_` and `\` characters in the query are treated literally.
 pub async fn list_books_filtered(pool: &SqlitePool, criteria: FilterCriteria<'_>) -> Result<Vec<BookRow>, sqlx::Error> {
-    let query = criteria.query.map(|q| q.trim()).filter(|q| !q.is_empty());
-    let langs: Vec<&str> = criteria
-        .lang
-        .map(|l| l.split(',').map(|s| s.trim()).filter(|s| !s.is_empty()).collect())
-        .unwrap_or_default();
-    let categories: Vec<&str> = criteria
-        .category
-        .map(|c| c.split(',').map(|s| s.trim()).filter(|s| !s.is_empty()).collect())
-        .unwrap_or_default();
-
-    if query.is_none() && langs.is_empty() && categories.is_empty() {
+    let Some((where_clause, params)) = build_filter_clauses(criteria) else {
         return list_books(pool).await;
-    }
+    };
 
-    let mut sql = format!("SELECT {SELECT_BOOK_COLUMNS} FROM books WHERE 1=1");
-    let mut params: Vec<String> = Vec::new();
-
-    if let Some(query) = query {
-        let pattern = format!(
-            "%{}%",
-            query
-                .to_lowercase()
-                .replace('\\', "\\\\")
-                .replace('%', "\\%")
-                .replace('_', "\\_")
-        );
-        sql.push_str(" AND query_text LIKE ? ESCAPE '\\'");
-        params.push(pattern);
-    }
-
-    if !langs.is_empty() {
-        let conditions: Vec<String> = (0..langs.len()).map(|_| "language = ?".to_string()).collect();
-        sql.push_str(&format!(" AND ({})", conditions.join(" OR ")));
-        params.extend(langs.iter().map(|s| s.to_string()));
-    }
-
-    if !categories.is_empty() {
-        let conditions: Vec<String> = (0..categories.len()).map(|_| "category = ?".to_string()).collect();
-        sql.push_str(&format!(" AND ({})", conditions.join(" OR ")));
-        params.extend(categories.iter().map(|s| s.to_string()));
-    }
-
-    sql.push_str(" ORDER BY title");
+    let sql = format!("SELECT {SELECT_BOOK_COLUMNS} FROM books WHERE {where_clause} ORDER BY title");
 
     let mut query_builder = sqlx::query_as::<_, BookRow>(&sql);
     for param in &params {
