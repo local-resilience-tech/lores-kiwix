@@ -14,6 +14,7 @@ use sqlx::SqlitePool;
 use crate::api::{ApiState, categories, entries, languages};
 
 mod append_text;
+mod content;
 mod static_override;
 
 /// Build an Axum application that proxies every request to `upstream`,
@@ -22,6 +23,7 @@ pub fn app(upstream: impl Into<String>, pool: SqlitePool, library: Arc<Mutex<Lib
     let state = ApiState::new(upstream, pool, library);
 
     Router::new()
+        .route("/content/{book_id}", any(content::handler))
         .route("/catalog/v2/entries", any(entries::handler))
         .route("/catalog/v2/categories", any(categories::handler))
         .route("/catalog/v2/languages", any(languages::handler))
