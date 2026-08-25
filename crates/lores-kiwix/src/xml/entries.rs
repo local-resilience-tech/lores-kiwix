@@ -219,6 +219,7 @@ mod tests {
               <link href="/content/abc123" rel="http://opds-spec.org/acquisition/open-access" type="text/html" />
               <link href="/content/abc123" type="text/html" />
               <dc:issued>2026-06-01T00:00:00Z</dc:issued>
+              <source>remote</source>
             </entry>
         "#};
 
@@ -261,6 +262,7 @@ mod tests {
                   <name>Test Author</name>
                 </author>
                 <dc:issued>2026-06-01T00:00:00Z</dc:issued>
+                <source>remote</source>
               </entry>
             </feed>
         "#};

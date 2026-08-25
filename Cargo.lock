@@ -1165,6 +1165,7 @@ dependencies = [
  "tokio",
  "tonic",
  "tracing",
+ "uuid",
 ]
 
 [[package]]
@@ -1198,8 +1199,6 @@ dependencies = [
 [[package]]
 name = "lores-p2panda-client"
 version = "0.3.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f8b7831217abde329165c589297c1b78a93f96e61b44bc88c821c8c13e92bcb6"
 dependencies = [
  "prost",
  "tokio",
@@ -2698,6 +2697,18 @@ name = "utf8_iter"
 version = "1.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b6c140620e7ffbb22c2dee59cafe6084a59b5ffc27a8859a5f0d494b5d52b6be"
+
+[[package]]
+name = "uuid"
+version = "1.25.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f053576934f05a761a402421fbbe3d425d9366f75f978806a037b3ca481abecc"
+dependencies = [
+ "getrandom 0.4.3",
+ "js-sys",
+ "serde_core",
+ "wasm-bindgen",
+]
 
 [[package]]
 name = "valuable"
