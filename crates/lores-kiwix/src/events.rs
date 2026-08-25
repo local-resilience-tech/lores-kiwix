@@ -42,7 +42,7 @@ async fn project_book_registered(
 
     books::insert_book(&mut *tx, data).await?;
 
-    if let Some(node) = &node_op.node {
+    if let Some(node) = &node_op.author_node_id {
         let node_id = hex::encode(&node.0);
         holdings::insert_holding(&mut *tx, &data.book_id, &node_id).await?;
     }
