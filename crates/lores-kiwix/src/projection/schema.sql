@@ -26,6 +26,12 @@ CREATE TABLE holdings (
     node_id TEXT NOT NULL,
     PRIMARY KEY (book_id, node_id),
     FOREIGN KEY (book_id) REFERENCES books (id) ON DELETE CASCADE
+    FOREIGN KEY (node_id) REFERENCES nodes (id) ON DELETE CASCADE
 );
 
 CREATE INDEX idx_holdings_node ON holdings (node_id);
+
+CREATE TABLE nodes (
+    id          TEXT PRIMARY KEY NOT NULL,
+    local       BOOLEAN NOT NULL DEFAULT FALSE
+);
