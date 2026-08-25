@@ -4,7 +4,6 @@ members = [
     "crates/lores-kiwix",
     "crates/libkiwix-rust",
     "crates/lores-kiwix-node",
-    "crates/lores-p2panda-dev-server",
 ]
 
 [workspace.dependencies]
