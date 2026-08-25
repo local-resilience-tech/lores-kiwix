@@ -19,3 +19,13 @@ CREATE TABLE books (
     tags        TEXT NOT NULL,
     query_text  TEXT NOT NULL
 );
+
+-- Maps books to the nodes that hold them (many-to-many).
+CREATE TABLE holdings (
+    book_id TEXT NOT NULL,
+    node_id TEXT NOT NULL,
+    PRIMARY KEY (book_id, node_id),
+    FOREIGN KEY (book_id) REFERENCES books (id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_holdings_node ON holdings (node_id);

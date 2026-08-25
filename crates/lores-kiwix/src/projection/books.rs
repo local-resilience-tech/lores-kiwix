@@ -167,7 +167,10 @@ impl Into<BookMetadata> for BookRow {
     }
 }
 
-pub async fn insert_book(pool: &SqlitePool, data: &BookRegisteredDataV1) -> Result<(), sqlx::Error> {
+pub async fn insert_book<'e, E>(executor: E, data: &BookRegisteredDataV1) -> Result<(), sqlx::Error>
+where
+    E: sqlx::Executor<'e, Database = sqlx::Sqlite>,
+{
     let query_text = build_query_text(data);
 
     sqlx::query(
@@ -200,7 +203,7 @@ pub async fn insert_book(pool: &SqlitePool, data: &BookRegisteredDataV1) -> Resu
     .bind(&data.category)
     .bind(&data.tags)
     .bind(&query_text)
-    .execute(pool)
+    .execute(executor)
     .await?;
 
     Ok(())
