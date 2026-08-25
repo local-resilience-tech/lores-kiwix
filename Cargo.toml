@@ -3,7 +3,6 @@ resolver = "3"
 members = [
     "crates/lores-kiwix",
     "crates/libkiwix-rust",
-    "crates/lores-app-node",
     "crates/lores-kiwix-node",
     "crates/lores-p2panda-dev-server",
 ]

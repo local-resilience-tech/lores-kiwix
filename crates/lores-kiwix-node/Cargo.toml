@@ -4,6 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-lores-app-node = { path = "../lores-app-node" }
+lores-app-node = { path = "../../../lores-node/backend/lores-app-node" }
 serde = { version = "1", features = ["derive"] }
 sqlx = { workspace = true }
