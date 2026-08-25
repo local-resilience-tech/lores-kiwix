@@ -8,6 +8,9 @@ export ZIM_DIR := env_var_or_default("ZIM_DIR", "./data/zims")
 # gRPC address shared by all dev-mode processes.
 export PANDA_GRPC_ADDR := env_var_or_default("PANDA_GRPC_ADDR", "http://127.0.0.1:50051")
 
+# Location of the lores-node backend workspace that provides the dev gRPC server.
+export LORES_NODE_BACKEND := env_var_or_default("LORES_NODE_BACKEND", "../lores-node/backend")
+
 # Base HTTP port for the first lores-kiwix instance; the second uses port+1.
 export BASE_PORT := env_var_or_default("BASE_PORT", "8080")
 export BASE_PORT_2 := shell("echo $(( " + BASE_PORT + " + 1 ))")
@@ -24,4 +27,4 @@ build:
 
 # Build and run just the dev gRPC server.
 run-dev-server:
-    cargo run -p lores-p2panda-dev-server
+    cargo run --manifest-path {{LORES_NODE_BACKEND}}/Cargo.toml -p lores-p2panda-dev-server

@@ -2,11 +2,13 @@ use std::env;
 use std::sync::{Arc, Mutex};
 
 use libkiwix_rust::{self as kiwix, IpMode, ServerConfig};
-use lores_kiwix_node::operations::AppOperation;
+
+use crate::node::operations::AppOperation;
 
 mod api;
 mod events;
 mod library;
+mod node;
 mod projection;
 mod proxy;
 mod utilities;
@@ -90,7 +92,7 @@ async fn main() {
 }
 
 async fn start_node() -> (
-    lores_kiwix_node::LoresKiwixNode,
+    node::LoresKiwixNode,
     tokio::sync::watch::Receiver<bool>,
     tokio::task::JoinHandle<()>,
     sqlx::SqlitePool,
@@ -101,7 +103,7 @@ async fn start_node() -> (
 
     let data_dir = std::env::var(DATA_DIR_ENV).unwrap_or_else(|_| DATA_DIR_DEFAULT.to_string());
 
-    let (projection_pool, should_replay) = lores_kiwix_node::create_projection_db()
+    let (projection_pool, should_replay) = projection::create_projection_db()
         .await
         .expect("failed to create projection database");
 
@@ -111,7 +113,7 @@ async fn start_node() -> (
         .await
         .expect("failed to open operations database");
 
-    let node = lores_kiwix_node::connect(operations_pool, panda_grpc_addr, &app_id, &instance_id)
+    let node = node::connect(operations_pool, panda_grpc_addr, &app_id, &instance_id)
         .await
         .expect("failed to connect node");
 

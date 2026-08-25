@@ -1,6 +1,7 @@
 use libkiwix_rust::BookMetadata;
-use lores_kiwix_node::operations::ZimRegisteredDataV1;
 use sqlx::{FromRow, SqlitePool};
+
+use crate::node::operations::ZimRegisteredDataV1;
 
 /// A row from the `zims` projection table.
 #[derive(Debug, Clone, FromRow, Default)]
@@ -231,7 +232,7 @@ fn build_query_text(data: &ZimRegisteredDataV1) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use lores_kiwix_node::operations::ZimRegisteredDataV1;
+    use crate::node::operations::ZimRegisteredDataV1;
     use sqlx::SqlitePool;
 
     fn test_data(

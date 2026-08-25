@@ -22,7 +22,7 @@ pub struct ZimRegisteredDataV1 {
     pub tags: String,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum AppOperation {
     ZimRegisteredV1(ZimRegisteredDataV1),
 }

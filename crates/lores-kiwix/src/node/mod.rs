@@ -1,13 +1,11 @@
-use lores_app_node::{AppNode, ProjectionDb};
+use lores_app_node::AppNode;
 use sqlx::SqlitePool;
 
-use crate::operations::AppOperation;
+use self::operations::AppOperation;
 
 pub mod operations;
 
 pub type LoresKiwixNode = AppNode<AppOperation>;
-
-const SCHEMA: &str = include_str!("schema.sql");
 
 pub async fn connect(
     local_operations_pool: SqlitePool,
@@ -16,10 +14,4 @@ pub async fn connect(
     instance_id: impl Into<String>,
 ) -> Result<LoresKiwixNode, sqlx::Error> {
     AppNode::grpc_with_local(local_operations_pool, grpc_addr, app_id, instance_id).await
-}
-
-/// Create the in-memory projection database with the current schema applied.
-
-pub async fn create_projection_db() -> Result<(SqlitePool, bool), sqlx::Error> {
-    ProjectionDb::in_memory(SCHEMA).await
 }

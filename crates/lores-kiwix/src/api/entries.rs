@@ -6,11 +6,11 @@ use axum::{
 };
 use libkiwix_rust::Filter;
 
-use crate::projection::zims;
 use crate::utilities::pagination::Paginator;
 use crate::xml::entries::{build_entry, build_feed_root};
 use crate::xml::render_xml;
 use crate::{api::ApiState, proxy::proxy_error};
+use crate::{projection::zims, utilities::book::LoResBook};
 
 /// Serve the `/catalog/v2/entries` endpoint directly from the local libkiwix
 /// library instead of proxying to the upstream kiwix server.
@@ -31,7 +31,7 @@ pub async fn handler(State(state): State<ApiState>, req: Request) -> Response {
     // Gather all synchronous libkiwix work before the first await so that the
     // `Element` tree (which uses `Rc` and is not `Send`) is constructed after
     // the last await point.
-    let (page_metadata, book_ids, lib_exhausted) = {
+    let (page_books, book_ids, lib_exhausted) = {
         // The lock guard must not be held across an await point. Keep all
         // libkiwix work inside this synchronous block.
         let mut library = state.library.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
@@ -39,9 +39,9 @@ pub async fn handler(State(state): State<ApiState>, req: Request) -> Response {
 
         let page = params.paginator.page(&book_ids);
         let lib_exhausted = page.is_exhausted();
-        let page_metadata = fetch_page_metadata(&mut library, page.items);
+        let page_books = fetch_page_books(&mut library, page.items);
 
-        (page_metadata, book_ids, lib_exhausted)
+        (page_books, book_ids, lib_exhausted)
     };
 
     let unique_extra_zims = if lib_exhausted {
@@ -63,14 +63,14 @@ pub async fn handler(State(state): State<ApiState>, req: Request) -> Response {
     let extra_page = params.paginator.tail(book_ids.len()).page(&unique_extra_zims);
 
     let result = CatalogueEntriesResult {
-        entries: page_metadata
+        books: page_books
             .iter()
             .chain(&extra_page.items.iter().cloned().map(Into::into).collect::<Vec<_>>())
             .cloned()
             .collect(),
         total: book_ids.len() + unique_extra_zims.len(),
         start: params.paginator.start_index(book_ids.len() + unique_extra_zims.len()),
-        items_per_page: page_metadata.len() + extra_page.items.len(),
+        items_per_page: page_books.len() + extra_page.items.len(),
         query: raw_query,
     };
 
@@ -88,11 +88,11 @@ pub async fn handler(State(state): State<ApiState>, req: Request) -> Response {
 }
 
 /// Fetch metadata for each book ID in `page` while holding the library lock.
-fn fetch_page_metadata(library: &mut libkiwix_rust::Library, page: &[String]) -> Vec<libkiwix_rust::BookMetadata> {
-    let mut page_metadata = Vec::with_capacity(page.len());
+fn fetch_page_books(library: &mut libkiwix_rust::Library, page: &[String]) -> Vec<LoResBook> {
+    let mut page_metadata: Vec<LoResBook> = Vec::with_capacity(page.len());
     for id in page {
         if let Some(metadata) = libkiwix_rust::library_get_book_metadata(library, id) {
-            page_metadata.push(metadata);
+            page_metadata.push(metadata.into());
         }
     }
     page_metadata
@@ -110,7 +110,7 @@ fn filter_duplicate_zims(extra_zims: &[zims::Zim], book_ids: &[String]) -> Vec<z
 
 /// Result of collecting and paginating entries for the catalog response.
 struct CatalogueEntriesResult<'a> {
-    entries: Vec<libkiwix_rust::BookMetadata>,
+    books: Vec<LoResBook>,
     total: usize,
     start: usize,
     items_per_page: usize,
@@ -122,8 +122,8 @@ fn render_result(result: CatalogueEntriesResult<'_>) -> Result<Vec<u8>, elementt
     let now = chrono::Utc::now();
     let mut feed = build_feed_root(now, result.query, result.total, result.start, result.items_per_page);
 
-    for metadata in &result.entries {
-        feed.append_child(build_entry(metadata, &feed));
+    for book in &result.books {
+        feed.append_child(build_entry(book, &feed));
     }
 
     render_xml(&feed)
