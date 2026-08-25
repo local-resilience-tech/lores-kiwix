@@ -1,8 +1,6 @@
 use crate::node::operations::BookRegisteredDataV1;
 use libkiwix_rust::BookMetadata;
 
-/// Build a `ZimRegisteredDataV1` from a filesystem path and the
-/// `BookMetadata` returned by libkiwix.
 pub fn registered_data_from_path_and_metadata(path: &str, meta: &BookMetadata) -> BookRegisteredDataV1 {
     let filename = std::path::Path::new(path)
         .file_name()

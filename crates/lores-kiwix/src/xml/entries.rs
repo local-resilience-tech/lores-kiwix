@@ -181,8 +181,8 @@ mod tests {
         s.lines().map(str::trim).filter(|l| !l.is_empty()).collect()
     }
 
-    fn make_zim(id: &str) -> crate::projection::books::Book {
-        crate::projection::books::Book {
+    fn make_book_row(id: &str) -> crate::projection::books::BookRow {
+        crate::projection::books::BookRow {
             id: id.to_string(),
             filename: format!("{id}.zim"),
             date: "2026-06-01".to_string(),
@@ -190,22 +190,22 @@ mod tests {
             description: "A test description.".to_string(),
             language: "eng".to_string(),
             creator: "Test Author".to_string(),
-            ..crate::projection::books::Book::default()
+            ..crate::projection::books::BookRow::default()
         }
     }
 
     #[test]
     fn build_entry_renders_xml() {
-        let zim = crate::projection::books::Book {
+        let book = crate::projection::books::BookRow {
             id: "abc123".to_string(),
             filename: "abc123.zim".to_string(),
             date: "2026-06-01".to_string(),
             flavour: "nopic".to_string(),
-            ..crate::projection::books::Book::default()
+            ..crate::projection::books::BookRow::default()
         };
         let feed = Element::new((ATOM_NS, "feed"));
 
-        let book: LoResBook = zim.into();
+        let book: LoResBook = book.into();
         let xml = render_xml(&build_entry(&book, &feed)).expect("render failed");
         let xml_str = String::from_utf8(xml).unwrap();
 
@@ -232,7 +232,7 @@ mod tests {
             .unwrap()
             .to_utc();
         let mut feed = build_feed_root(now, "language=eng", 1, 0, 10);
-        let book: LoResBook = make_zim("abc123").into();
+        let book: LoResBook = make_book_row("abc123").into();
         feed.append_child(build_entry(&book, &feed));
 
         let xml = render_xml(&feed).expect("render failed");

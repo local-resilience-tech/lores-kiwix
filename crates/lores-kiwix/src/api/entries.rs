@@ -99,7 +99,7 @@ fn fetch_page_books(library: &mut libkiwix_rust::Library, page: &[String]) -> Ve
 }
 
 /// Return the extra books whose IDs do not already appear in the libkiwix results.
-fn remove_duplicate_books(books: &[books::Book], book_ids: &[String]) -> Vec<books::Book> {
+fn remove_duplicate_books(books: &[books::BookRow], book_ids: &[String]) -> Vec<books::BookRow> {
     let ids: std::collections::HashSet<&str> = book_ids.iter().map(|id| id.as_str()).collect();
     books
         .iter()

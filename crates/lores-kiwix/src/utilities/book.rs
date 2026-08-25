@@ -1,6 +1,6 @@
 use libkiwix_rust::BookMetadata;
 
-use crate::projection::books::Book;
+use crate::projection::books::BookRow;
 
 #[derive(Clone)]
 pub enum LoResBookSource {
@@ -23,7 +23,7 @@ impl Into<LoResBook> for BookMetadata {
     }
 }
 
-impl Into<LoResBook> for Book {
+impl Into<LoResBook> for BookRow {
     fn into(self) -> LoResBook {
         LoResBook {
             book: self.into(),
