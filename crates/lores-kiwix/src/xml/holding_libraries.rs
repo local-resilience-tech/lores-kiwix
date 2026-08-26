@@ -1,5 +1,6 @@
 use chrono::{DateTime, Utc};
 use elementtree::Element;
+use lores_app_node::NodeInfo;
 
 use crate::projection::nodes::NodeRow;
 
@@ -19,10 +20,11 @@ pub fn build_feed_root(now: DateTime<Utc>) -> Element {
     feed
 }
 
-pub fn build_holding_library(node: &NodeRow, now: DateTime<Utc>, feed: &Element) -> Element {
+pub fn build_holding_library(node: &NodeRow, info: Option<&NodeInfo>, now: DateTime<Utc>, feed: &Element) -> Element {
     let mut entry = Element::new_with_namespaces((ATOM_NS, "entry"), feed);
 
-    entry.append_new_child((ATOM_NS, "title")).set_text(node.id.clone());
+    let title = info.and_then(|i| i.name.as_deref()).unwrap_or(&node.id);
+    entry.append_new_child((ATOM_NS, "title")).set_text(title);
     entry
         .append_new_child((ATOM_NS, "updated"))
         .set_text(now.to_rfc3339_opts(chrono::SecondsFormat::Secs, true));

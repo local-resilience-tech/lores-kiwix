@@ -12,6 +12,7 @@ use libkiwix_rust::LibraryHandle;
 use sqlx::SqlitePool;
 
 use crate::api::{ApiState, categories, entries, holding_libraries, languages};
+use crate::node::LoresKiwixNode;
 
 mod append_text;
 mod content;
@@ -19,8 +20,8 @@ mod static_override;
 
 /// Build an Axum application that proxies every request to `upstream`,
 /// except for routes that are specifically overwritten.
-pub fn app(upstream: impl Into<String>, pool: SqlitePool, library: Arc<Mutex<LibraryHandle>>) -> Router {
-    let state = ApiState::new(upstream, pool, library);
+pub fn app(upstream: impl Into<String>, pool: SqlitePool, library: Arc<Mutex<LibraryHandle>>, node: LoresKiwixNode) -> Router {
+    let state = ApiState::new(upstream, pool, library, node);
 
     Router::new()
         .route("/content/{book_id}", any(content::handler))

@@ -31,6 +31,7 @@ where
 }
 
 #[derive(FromRow)]
+#[allow(dead_code)]
 pub struct NodeRow {
     pub id: String,
     pub local: bool,

@@ -11,7 +11,7 @@ pub fn register(node: &LoresKiwixNode, pool: SqlitePool) {
         loop {
             match rx.recv().await {
                 Ok(NodeEvent::ServerConnected { node_id, region }) => {
-                    tracing::info!(node_id = %node_id, region = %region, "node event: server connected");
+                    tracing::info!(node_id = %node_id, region = ?region, "node event: server connected");
 
                     if let Err(e) = nodes::set_local_node(&pool, &node_id).await {
                         tracing::error!(error = %e, "Failed to update local node in projection");
