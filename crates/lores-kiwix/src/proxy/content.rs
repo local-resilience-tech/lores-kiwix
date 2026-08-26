@@ -1,13 +1,13 @@
 use axum::{
     body::Body,
     extract::{Path, State},
-    http::{StatusCode, Uri, header},
+    http::{StatusCode, Uri},
     response::Response,
 };
 use libkiwix_rust::library_get_book_metadata;
 
 use super::proxy_error;
-use crate::api::ApiState;
+use crate::{api::ApiState, proxy::static_override::serve_static_file};
 
 pub async fn handler(State(state): State<ApiState>, Path(book_id): Path<String>, uri: Uri) -> Response {
     let is_local = {
@@ -18,7 +18,7 @@ pub async fn handler(State(state): State<ApiState>, Path(book_id): Path<String>,
     if is_local {
         proxy_content_upstream(&state, &book_id, "", &uri).await
     } else {
-        serve_remote_viewer().await
+        serve_remote_content().await
     }
 }
 
@@ -52,17 +52,6 @@ async fn proxy_content_upstream(state: &ApiState, book_id: &str, path: &str, uri
     builder.body(Body::from(body)).unwrap()
 }
 
-async fn serve_remote_viewer() -> Response {
-    let path = concat!(env!("CARGO_MANIFEST_DIR"), "/static/html/remote_viewer.html");
-    match tokio::fs::read_to_string(path).await {
-        Ok(contents) => Response::builder()
-            .status(StatusCode::OK)
-            .header(header::CONTENT_TYPE, "text/html; charset=utf-8")
-            .body(Body::from(contents))
-            .unwrap(),
-        Err(err) => {
-            tracing::error!(error = %err, "failed to read remote_viewer.html");
-            proxy_error(StatusCode::INTERNAL_SERVER_ERROR, "failed to read remote_viewer.html")
-        }
-    }
+async fn serve_remote_content() -> Response {
+    serve_static_file("/html/remote_content.html", "text/html; charset=utf-8").await
 }

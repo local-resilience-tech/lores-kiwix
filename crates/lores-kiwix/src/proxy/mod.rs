@@ -29,17 +29,18 @@ pub fn app(upstream: impl Into<String>, pool: SqlitePool, library: Arc<Mutex<Lib
         .route("/catalog/v2/languages", any(languages::handler))
         .route(
             "/skin/index.css",
-            any(append_text::handler(
-                "/skin/index.css",
-                concat!(env!("CARGO_MANIFEST_DIR"), "/static/css/index.css"),
-            )),
+            any(append_text::handler("/skin/index.css", "/css/index.css")),
         )
         .route(
             "/skin/index.js",
-            any(static_override::handler(concat!(
-                env!("CARGO_MANIFEST_DIR"),
-                "/static/js/index.js"
-            ))),
+            any(static_override::handler(
+                "/js/index.js",
+                "application/javascript; charset=utf-8",
+            )),
+        )
+        .route(
+            "/skin/remote_content.css",
+            any(static_override::handler("/css/remote_content.css", "text/css")),
         )
         .fallback_service(ReverseProxy::new("/", state.upstream.as_str()))
         .with_state(state)

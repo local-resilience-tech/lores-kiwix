@@ -1,0 +1,11 @@
+body.remote-content {
+  font-size: medium;
+
+  .content {
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-top: 2em;
+    padding-bottom: 2em;
+  }
+}

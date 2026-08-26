@@ -19,22 +19,29 @@ use crate::api::ApiState;
 /// local file is always served.
 pub fn handler(
     local_path: &'static str,
+    content_type: &'static str,
 ) -> impl Fn(State<ApiState>, Request) -> std::pin::Pin<Box<dyn std::future::Future<Output = Response> + Send>> + Clone
 {
     move |_state: State<ApiState>, _req: Request| {
         let local_path = local_path;
-        Box::pin(async move {
-            match tokio::fs::read_to_string(local_path).await {
-                Ok(contents) => Response::builder()
-                    .status(StatusCode::OK)
-                    .header(header::CONTENT_TYPE, "application/javascript; charset=utf-8")
-                    .body(Body::from(contents))
-                    .unwrap(),
-                Err(err) => {
-                    tracing::error!(error = %err, path = %local_path, "failed to read static override file");
-                    proxy_error(StatusCode::INTERNAL_SERVER_ERROR, "failed to read static override file")
-                }
-            }
-        })
+        let content_type = content_type;
+        Box::pin(async move { serve_static_file(local_path, content_type).await })
+    }
+}
+
+pub async fn serve_static_file(static_path: &str, content_type: &str) -> Response {
+    let mut file_path = concat!(env!("CARGO_MANIFEST_DIR"), "/static").to_string();
+    file_path.push_str(static_path);
+
+    match tokio::fs::read_to_string(file_path).await {
+        Ok(contents) => Response::builder()
+            .status(StatusCode::OK)
+            .header(header::CONTENT_TYPE, content_type)
+            .body(Body::from(contents))
+            .unwrap(),
+        Err(err) => {
+            tracing::error!(error = %err, path = static_path, "failed to static file");
+            proxy_error(StatusCode::INTERNAL_SERVER_ERROR, "failed to read static file")
+        }
     }
 }

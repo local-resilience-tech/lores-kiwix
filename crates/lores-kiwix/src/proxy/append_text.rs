@@ -62,7 +62,10 @@ pub fn handler(
 }
 
 async fn append_text(upstream: &[u8], append_path: &str) -> Vec<u8> {
-    match tokio::fs::read(append_path).await {
+    let mut file_path = concat!(env!("CARGO_MANIFEST_DIR"), "/static").to_string();
+    file_path.push_str(append_path);
+
+    match tokio::fs::read(file_path).await {
         Ok(custom) => {
             let mut result = upstream.to_vec();
             result.extend_from_slice(b"\n");
