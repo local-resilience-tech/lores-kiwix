@@ -36,6 +36,7 @@ fn usage(program: &str) {
 
 #[tokio::main]
 async fn main() {
+    tracing_subscriber::fmt::init();
     let args: Vec<String> = env::args().collect();
     let program = args.first().map(|s| s.as_str()).unwrap_or("lores-kiwix");
 

@@ -12,7 +12,7 @@ pub fn register(node: &LoresKiwixNode, pool: SqlitePool) {
         loop {
             match rx.recv().await {
                 Ok(node_op) => {
-                    println!("processing op: {:?}", node_op);
+                    tracing::info!(op = ?node_op.op, "operation received");
 
                     match &node_op.op {
                         AppOperation::BookRegisteredV1(data) => {

@@ -1,7 +1,7 @@
-use lores_app_node::LoResNodeId;
+use lores_app_node::NodeId;
 use sqlx::{Executor, Sqlite, SqlitePool, prelude::FromRow};
 
-pub async fn set_local_node(pool: &SqlitePool, node_id: &LoResNodeId) -> Result<(), sqlx::Error> {
+pub async fn set_local_node(pool: &SqlitePool, node_id: &NodeId) -> Result<(), sqlx::Error> {
     let node_id = node_id.to_hex();
     let mut tx = pool.begin().await?;
 
