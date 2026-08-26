@@ -1,0 +1,23 @@
+body.remote-content {
+  font-size: medium;
+
+  .content {
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-top: 2em;
+    padding-bottom: 2em;
+  }
+
+  .libraries__list {
+    padding-top: 2em;
+
+    .library {
+      border: 3px solid #acacac;
+      border-radius: 3px;
+      color: #444343;
+      background-color: #f7f7f7;
+      padding: 10px;
+    }
+  }
+}

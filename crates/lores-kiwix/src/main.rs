@@ -36,6 +36,7 @@ fn usage(program: &str) {
 
 #[tokio::main]
 async fn main() {
+    tracing_subscriber::fmt::init();
     let args: Vec<String> = env::args().collect();
     let program = args.first().map(|s| s.as_str()).unwrap_or("lores-kiwix");
 
@@ -80,7 +81,7 @@ async fn main() {
     server_ready.recv().expect("internal kiwix server did not report ready");
     wait_for_upstream(&upstream).await;
 
-    let app = proxy::app(&upstream, projection_pool, shared_library);
+    let app = proxy::app(&upstream, projection_pool, shared_library, node);
     let listener = tokio::net::TcpListener::bind(&public_bind)
         .await
         .expect("failed to bind public proxy port");

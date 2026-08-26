@@ -4,8 +4,11 @@ use libkiwix_rust::LibraryHandle;
 use reqwest::Client;
 use sqlx::SqlitePool;
 
+use crate::node::LoresKiwixNode;
+
 pub mod categories;
 pub mod entries;
+pub mod holding_libraries;
 pub mod languages;
 
 /// Shared state passed to API route handlers.
@@ -16,10 +19,11 @@ pub struct ApiState {
     pub upstream: String,
     pub pool: SqlitePool,
     pub library: Arc<Mutex<LibraryHandle>>,
+    pub node: LoresKiwixNode,
 }
 
 impl ApiState {
-    pub fn new(upstream: impl Into<String>, pool: SqlitePool, library: Arc<Mutex<LibraryHandle>>) -> Self {
+    pub fn new(upstream: impl Into<String>, pool: SqlitePool, library: Arc<Mutex<LibraryHandle>>, node: LoresKiwixNode) -> Self {
         Self {
             client: Client::new(),
             no_redirect_client: Client::builder()
@@ -29,6 +33,7 @@ impl ApiState {
             upstream: upstream.into(),
             pool,
             library,
+            node,
         }
     }
 }

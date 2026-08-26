@@ -17,6 +17,7 @@ sqlx = { workspace = true, features = ["derive"] }
 url = "2"
 tokio = { workspace = true, features = ["full"] }
 tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [dev-dependencies]
 indoc = "2"

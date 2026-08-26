@@ -1,7 +1,7 @@
-use lores_app_node::LoResNodeId;
-use sqlx::{Executor, Sqlite, SqlitePool};
+use lores_app_node::NodeId;
+use sqlx::{Executor, Sqlite, SqlitePool, prelude::FromRow};
 
-pub async fn set_local_node(pool: &SqlitePool, node_id: &LoResNodeId) -> Result<(), sqlx::Error> {
+pub async fn set_local_node(pool: &SqlitePool, node_id: &NodeId) -> Result<(), sqlx::Error> {
     let node_id = node_id.to_hex();
     let mut tx = pool.begin().await?;
 
@@ -28,4 +28,28 @@ where
         .execute(executor)
         .await?;
     Ok(())
+}
+
+#[derive(FromRow)]
+#[allow(dead_code)]
+pub struct NodeRow {
+    pub id: String,
+    pub local: bool,
+}
+
+pub async fn list_nodes_holding_book(pool: &SqlitePool, book_id: &str) -> Result<Vec<NodeRow>, sqlx::Error> {
+    let results = sqlx::query_as::<_, NodeRow>(
+        "
+        SELECT nodes.id, nodes.local
+        FROM nodes
+        INNER JOIN holdings ON holdings.node_id = nodes.id
+        WHERE
+            book_id = ?
+        ORDER BY nodes.id",
+    )
+    .bind(book_id)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(results)
 }
