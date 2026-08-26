@@ -8,15 +8,15 @@
     return queryNode != null ? queryNode.innerHTML : "";
   }
 
-  function generateHoldingHtml(holding) {
-    const title = getInnerHtml(holding, "title");
+  function generateLibraryHtml(library) {
+    const title = getInnerHtml(library, "title");
     const divTag = document.createElement("div");
-    divTag.setAttribute("class", "holding");
-    divTag.innerHTML = `<div class="holding__title">${title}</div>`;
+    divTag.setAttribute("class", "library");
+    divTag.innerHTML = `<div class="library__title">${title}</div>`;
     return divTag;
   }
 
-  async function loadAndDisplayHoldings(bookId) {
+  async function loadAndDisplayLibraries(bookId) {
     const url = `/catalog/v2/entries/${encodeURIComponent(bookId)}/holding_libraries`;
     const resp = await fetch(url);
     if (!resp.ok) {
@@ -26,7 +26,7 @@
     const data = new window.DOMParser().parseFromString(await resp.text(), "application/xml");
     const holdings = data.querySelectorAll("entry");
 
-    const container = document.querySelector(".holdings__list");
+    const container = document.querySelector(".libraries__list");
     if (!container) return;
 
     if (!holdings.length) {
@@ -35,7 +35,7 @@
     }
 
     holdings.forEach((holding) => {
-      container.appendChild(generateHoldingHtml(holding));
+      container.appendChild(generateLibraryHtml(holding));
     });
   }
 
@@ -45,6 +45,6 @@
       console.error("No book ID found in URL");
       return;
     }
-    loadAndDisplayHoldings(bookId);
+    loadAndDisplayLibraries(bookId);
   });
 })();
