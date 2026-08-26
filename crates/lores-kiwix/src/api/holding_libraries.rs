@@ -5,47 +5,48 @@ use axum::{
     response::Response,
 };
 
-use crate::{api::ApiState, proxy::proxy_error};
+use crate::{
+    api::ApiState,
+    projection::nodes::{NodeRow, list_nodes_holding_book},
+    proxy::proxy_error,
+    xml::{
+        holding_libraries::{build_feed_root, build_holding_library},
+        render_xml,
+    },
+};
 
 pub async fn handler(State(state): State<ApiState>, Path(book_id): Path<String>) -> Response {
-    let holdings: Vec<Holding> = match fetch_holdings(&state, &book_id).await {
+    let nodes: Vec<NodeRow> = match list_nodes_holding_book(&state.pool, &book_id).await {
         Ok(h) => h,
-        Err(e) => {
-            return proxy_error(StatusCode::INTERNAL_SERVER_ERROR, &e);
+        Err(err) => {
+            tracing::error!(error = %err, "failed to query projection categories");
+            return proxy_error(StatusCode::INTERNAL_SERVER_ERROR, "Database error");
         }
     };
 
-    let xml = render_holdings_feed(&holdings);
-
-    Response::builder()
-        .status(StatusCode::OK)
-        .header(header::CONTENT_TYPE, "application/xml; charset=utf-8")
-        .body(Body::from(xml))
-        .unwrap()
+    match render_nodes_feed(&nodes) {
+        Ok(buf) => Response::builder()
+            .status(StatusCode::OK)
+            .header(header::CONTENT_TYPE, "application/atom+xml; charset=utf-8")
+            .body(Body::from(buf))
+            .unwrap(),
+        Err(err) => {
+            tracing::error!(error = %err, "failed to serialize holding libraries feed");
+            proxy_error(
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "failed to serialize holding libraries feed",
+            )
+        }
+    }
 }
 
-pub struct Holding {
-    pub title: String,
-}
+fn render_nodes_feed(nodes: &[NodeRow]) -> Result<Vec<u8>, elementtree::Error> {
+    let now = chrono::Utc::now();
+    let mut feed = build_feed_root(now);
+    for node in nodes {
+        let entry = build_holding_library(node, now, &feed);
+        feed.append_child(entry);
+    }
 
-async fn fetch_holdings(_state: &ApiState, _book_id: &str) -> Result<Vec<Holding>, String> {
-    // TODO: query holdings from the database by book_id
-    Ok(vec![])
-}
-
-fn render_holdings_feed(holdings: &[Holding]) -> String {
-    let entries: String = holdings
-        .iter()
-        .map(|h| format!("<entry><title>{}</title></entry>", xml_escape(&h.title)))
-        .collect();
-
-    format!(r#"<?xml version="1.0" encoding="UTF-8"?><feed xmlns="http://www.w3.org/2005/Atom">{entries}</feed>"#)
-}
-
-fn xml_escape(s: &str) -> String {
-    s.replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
-        .replace('"', "&quot;")
-        .replace('\'', "&apos;")
+    render_xml(&feed)
 }
