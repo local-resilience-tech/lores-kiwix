@@ -8,7 +8,6 @@ use crate::utilities::filter::{FilterCriteria, build_filter_clauses};
 #[allow(dead_code)]
 pub struct BookRow {
     pub id: String,
-    pub filename: String,
     pub name: String,
     pub date: String,
     pub flavour: String,
@@ -23,7 +22,6 @@ pub struct BookRow {
 
 const SELECT_BOOK_COLUMNS: &str = "
     books.id,
-    books.filename,
     books.name,
     books.date,
     books.flavour,
@@ -134,7 +132,6 @@ where
     sqlx::query(
         "INSERT OR REPLACE INTO books (
             id,
-            filename,
             name,
             date,
             flavour,
@@ -146,10 +143,9 @@ where
             category,
             tags,
             query_text
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     )
     .bind(&data.book_id)
-    .bind(&data.filename)
     .bind(&data.name)
     .bind(&data.date)
     .bind(&data.flavour)
@@ -196,7 +192,6 @@ mod tests {
 
     fn test_data(id: &str, title: &str, description: &str, language: &str, category: &str) -> BookRegisteredDataV1 {
         BookRegisteredDataV1 {
-            filename: format!("{id}.zim"),
             book_id: id.to_string(),
             name: id.to_string(),
             date: "2024-01-01".to_string(),

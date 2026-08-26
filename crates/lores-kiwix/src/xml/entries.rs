@@ -188,7 +188,6 @@ mod tests {
     fn make_book_row(id: &str) -> crate::projection::books::BookRow {
         crate::projection::books::BookRow {
             id: id.to_string(),
-            filename: format!("{id}.zim"),
             date: "2026-06-01".to_string(),
             title: "Test Book".to_string(),
             description: "A test description.".to_string(),
@@ -202,7 +201,6 @@ mod tests {
     fn build_entry_renders_xml() {
         let book = crate::projection::books::BookRow {
             id: "abc123".to_string(),
-            filename: "abc123.zim".to_string(),
             date: "2026-06-01".to_string(),
             flavour: "nopic".to_string(),
             ..crate::projection::books::BookRow::default()

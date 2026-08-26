@@ -3,7 +3,7 @@ use std::sync::{Arc, Mutex};
 
 use libkiwix_rust::{self as kiwix, IpMode, ServerConfig};
 
-use crate::node::operations::AppOperation;
+use crate::library::sync_filesystem;
 
 mod api;
 mod events;
@@ -56,22 +56,13 @@ async fn main() {
     let upstream = format!("http://{internal_bind}");
 
     let mut library = kiwix::new_library();
-    let registered = library::add_path_to_library(&mut library, path);
     let shared_library = Arc::new(Mutex::new(kiwix::LibraryHandle::new(library.clone())));
-    let server_ready = start_internal_kiwix_server(kiwix::LibraryHandle::new(library), &internal_bind);
+    let server_ready = start_internal_kiwix_server(kiwix::LibraryHandle::new(library.clone()), &internal_bind);
 
     // Wait for the node to finish replay before publishing startup operations.
     let _ = ready_rx.changed().await;
 
-    for zim in &registered {
-        let op = AppOperation::BookRegisteredV1(utilities::books::registered_data_from_path_and_metadata(
-            &zim.path,
-            &zim.metadata,
-        ));
-        if let Err(e) = node.publish(&op).await {
-            eprintln!("Failed to publish BookRegisteredV1 for {}: {}", zim.path, e);
-        }
-    }
+    sync_filesystem(&mut library, &node, path).await;
 
     let public_bind = args
         .get(2)

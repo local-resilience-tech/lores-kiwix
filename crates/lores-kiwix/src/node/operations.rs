@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct BookRegisteredDataV1 {
-    pub filename: String,
     pub book_id: String,
     pub name: String,
     pub date: String,
