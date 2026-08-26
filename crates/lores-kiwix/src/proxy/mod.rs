@@ -11,7 +11,7 @@ use axum_reverse_proxy::ReverseProxy;
 use libkiwix_rust::LibraryHandle;
 use sqlx::SqlitePool;
 
-use crate::api::{ApiState, categories, entries, languages};
+use crate::api::{ApiState, categories, entries, holdings, languages};
 
 mod append_text;
 mod content;
@@ -27,6 +27,7 @@ pub fn app(upstream: impl Into<String>, pool: SqlitePool, library: Arc<Mutex<Lib
         .route("/catalog/v2/entries", any(entries::handler))
         .route("/catalog/v2/categories", any(categories::handler))
         .route("/catalog/v2/languages", any(languages::handler))
+        .route("/catalog/v2/entries/{book_id}/holdings", any(holdings::handler))
         .route(
             "/skin/index.css",
             any(append_text::handler("/skin/index.css", "/css/index.css")),
@@ -41,6 +42,13 @@ pub fn app(upstream: impl Into<String>, pool: SqlitePool, library: Arc<Mutex<Lib
         .route(
             "/skin/remote_content.css",
             any(static_override::handler("/css/remote_content.css", "text/css")),
+        )
+        .route(
+            "/skin/remote_content.js",
+            any(static_override::handler(
+                "/js/remote_content.js",
+                "application/javascript; charset=utf-8",
+            )),
         )
         .fallback_service(ReverseProxy::new("/", state.upstream.as_str()))
         .with_state(state)
