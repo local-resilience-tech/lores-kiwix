@@ -17,7 +17,7 @@
   }
 
   async function loadAndDisplayHoldings(bookId) {
-    const url = `/catalog/v2/entries/${encodeURIComponent(bookId)}/holdings`;
+    const url = `/catalog/v2/entries/${encodeURIComponent(bookId)}/holding_libraries`;
     const resp = await fetch(url);
     if (!resp.ok) {
       console.error(`Failed to fetch holdings: ${resp.status}`);

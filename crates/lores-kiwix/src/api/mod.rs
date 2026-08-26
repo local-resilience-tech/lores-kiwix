@@ -6,7 +6,7 @@ use sqlx::SqlitePool;
 
 pub mod categories;
 pub mod entries;
-pub mod holdings;
+pub mod holding_libraries;
 pub mod languages;
 
 /// Shared state passed to API route handlers.
