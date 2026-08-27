@@ -28,13 +28,8 @@ pub async fn sync_filesystem(
         }
     };
 
-    println!("persisted book ids {:?}", persisted_book_ids);
-
     let new_books = new_books(&books, &persisted_book_ids);
     let missing_book_ids = missing_book_ids(&books, &persisted_book_ids);
-
-    println!("new books {:?}", new_books);
-    println!("missing book ids {:?}", missing_book_ids);
 
     publish_book_registrations(&new_books, node).await;
     publish_book_deregistrations(&missing_book_ids, node).await;
