@@ -1,12 +1,5 @@
 use libkiwix_rust::{self as kiwix, BookMetadata};
 
-/// A ZIM file that was successfully added to the Kiwix library.
-#[derive(Debug, Clone)]
-pub struct RegisteredZim {
-    pub path: String,
-    pub metadata: BookMetadata,
-}
-
 #[derive(Debug, Clone)]
 pub enum AddZimError {
     AddFailed,
@@ -30,11 +23,11 @@ impl std::error::Error for AddZimError {}
 ///
 /// Returns a list of [`RegisteredZim`] entries for each ZIM file that was
 /// successfully added to the library.
-pub fn add_path_to_library(library: &mut kiwix::Library, path: &str) -> Vec<RegisteredZim> {
-    let meta = std::fs::metadata(path).expect("cannot access path");
+pub fn add_path_to_library(library: &mut kiwix::Library, path: &str) -> Vec<BookMetadata> {
+    let path_meta = std::fs::metadata(path).expect("cannot access path");
     let mut registered = Vec::new();
 
-    if meta.is_file() {
+    if path_meta.is_file() {
         match add_zim(library, path) {
             Ok(zim) => registered.push(zim),
             Err(e) => eprintln!("Failed to add {}: {}", path, e),
@@ -42,7 +35,7 @@ pub fn add_path_to_library(library: &mut kiwix::Library, path: &str) -> Vec<Regi
         return registered;
     }
 
-    if meta.is_dir() {
+    if path_meta.is_dir() {
         for entry in std::fs::read_dir(path).expect("cannot read directory") {
             let entry = entry.expect("directory entry");
             let path = entry.path();
@@ -60,7 +53,7 @@ pub fn add_path_to_library(library: &mut kiwix::Library, path: &str) -> Vec<Regi
     panic!("path is neither a file nor a directory: {}", path);
 }
 
-pub fn add_zim(library: &mut kiwix::Library, path: &str) -> Result<RegisteredZim, AddZimError> {
+pub fn add_zim(library: &mut kiwix::Library, path: &str) -> Result<BookMetadata, AddZimError> {
     let Some(book_id) = kiwix::library_add_book_from_path(library, path) else {
         return Err(AddZimError::AddFailed);
     };
@@ -68,8 +61,5 @@ pub fn add_zim(library: &mut kiwix::Library, path: &str) -> Result<RegisteredZim
         return Err(AddZimError::MetadataMissing { book_id });
     };
     eprintln!("Added: {} (id={})", path, metadata.id);
-    Ok(RegisteredZim {
-        path: path.to_string(),
-        metadata,
-    })
+    Ok(metadata)
 }

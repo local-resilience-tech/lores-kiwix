@@ -37,3 +37,35 @@ pub async fn fetch_holdings_for_books(
     }
     Ok(map)
 }
+
+pub async fn locally_held_book_ids(pool: &SqlitePool) -> Result<Vec<String>, sqlx::Error> {
+    let result: Vec<String> = sqlx::query_scalar(
+        r#"
+        SELECT DISTINCT(book_id)
+        FROM holdings
+        INNER JOIN nodes ON holdings.node_id = nodes.id
+        WHERE nodes.local IS TRUE
+    "#,
+    )
+    .fetch_all(pool)
+    .await?;
+
+    Ok(result)
+}
+
+pub async fn delete_local_holding(pool: &SqlitePool, book_id: &str) -> Result<(), sqlx::Error> {
+    sqlx::query(
+        r#"
+        DELETE FROM holdings
+        INNER JOIN nodes ON holdings.node_id = nodes.id
+        WHERE
+            nodes.local IS TRUE AND
+            holdings.book_id = ?
+    "#,
+    )
+    .bind(book_id)
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}

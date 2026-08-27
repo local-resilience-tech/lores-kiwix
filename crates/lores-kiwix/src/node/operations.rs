@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct BookRegisteredDataV1 {
-    pub filename: String,
     pub book_id: String,
     pub name: String,
     pub date: String,
@@ -17,6 +16,12 @@ pub struct BookRegisteredDataV1 {
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
+pub struct BookDeregisteredDataV1 {
+    pub book_id: String,
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum AppOperation {
     BookRegisteredV1(BookRegisteredDataV1),
+    BookDeregisteredV1(BookDeregisteredDataV1),
 }

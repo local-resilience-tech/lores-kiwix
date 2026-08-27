@@ -21,10 +21,14 @@ dev:
     mkdir -p .dev/data-a/zims .dev/data-b/zims
     mprocs --config mprocs.yaml
 
+clean_ops:
+    rm .dev/data-a/operations.sqlite
+    rm .dev/data-b/operations.sqlite
+
 # Build all workspace crates.
 build:
     cargo build
 
 # Build and run just the dev gRPC server.
 run-dev-server:
-    cargo run --manifest-path {{LORES_NODE_BACKEND}}/Cargo.toml -p lores-p2panda-dev-server
+    cargo run --manifest-path {{ LORES_NODE_BACKEND }}/Cargo.toml -p lores-p2panda-dev-server

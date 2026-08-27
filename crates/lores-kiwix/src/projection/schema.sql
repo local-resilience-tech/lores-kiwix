@@ -6,7 +6,6 @@
 
 CREATE TABLE books (
     id          TEXT PRIMARY KEY NOT NULL,
-    filename    TEXT NOT NULL,
     name        TEXT NOT NULL,
     date        TEXT NOT NULL,
     flavour     TEXT NOT NULL,
