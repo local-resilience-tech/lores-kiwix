@@ -5,6 +5,16 @@
 
 #include <cstdint>
 #include <kiwix/manager.h>
+#include <kiwix/version.h>
+
+rust::String libkiwix_runtime_version() {
+    for (const auto& entry : kiwix::getVersions()) {
+        if (entry.first == "libkiwix") {
+            return rust::String(entry.second);
+        }
+    }
+    return rust::String("");
+}
 
 std::shared_ptr<kiwix::Library> create_library() {
     return kiwix::Library::create();

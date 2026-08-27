@@ -9,6 +9,10 @@
 #include <kiwix/server.h>
 #include <kiwix/tools.h>
 
+// Version of libkiwix as reported by the shared library actually loaded at
+// runtime (may differ from the pkg-config version seen at build time).
+rust::String libkiwix_runtime_version();
+
 std::shared_ptr<kiwix::Library> create_library();
 std::shared_ptr<kiwix::Book> create_book();
 

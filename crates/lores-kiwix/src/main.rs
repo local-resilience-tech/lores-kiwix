@@ -37,6 +37,16 @@ fn usage(program: &str) {
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt::init();
+
+    match kiwix::verify_linked_version() {
+        Ok(version) => tracing::info!(libkiwix = version, "libkiwix version verified"),
+        Err((runtime, built_against)) => tracing::warn!(
+            runtime,
+            built_against,
+            "libkiwix runtime version differs from the version this build was compiled against"
+        ),
+    }
+
     let args: Vec<String> = env::args().collect();
     let program = args.first().map(|s| s.as_str()).unwrap_or("lores-kiwix");
 

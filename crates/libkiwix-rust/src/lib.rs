@@ -3,6 +3,10 @@
 //! This crate dynamically links against libkiwix discovered through pkg-config.
 //! It does not bundle or vendor libkiwix.
 
+/// The exact libkiwix version this crate was compiled and linked against,
+/// captured from pkg-config at build time.
+pub const LIBKIWIX_VERSION: &str = env!("LIBKIWIX_VERSION");
+
 #[cxx::bridge]
 mod ffi {
     /// Information about a book illustration.
@@ -24,6 +28,9 @@ mod ffi {
 
     unsafe extern "C++" {
         include!("src/bridge.h");
+
+        /// Version reported by the libkiwix shared library loaded at runtime.
+        fn libkiwix_runtime_version() -> String;
 
         /// Opaque handle to a `kiwix::Book`.
         #[namespace = "kiwix"]
@@ -172,10 +179,10 @@ mod server;
 pub use book::{BookIllustration, BookMetadata, book_set_path, new_book};
 pub use ffi::LanguageEntry;
 pub use ffi::language_self_name;
+pub use ffi::libkiwix_runtime_version;
 pub use library::{
-    Filter, LibraryHandle, library_add_book, library_add_book_from_path, library_filter,
-    library_get_book_metadata, library_get_books_categories, library_get_books_languages,
-    new_library,
+    Filter, LibraryHandle, library_add_book, library_add_book_from_path, library_filter, library_get_book_metadata,
+    library_get_books_categories, library_get_books_languages, new_library,
 };
 pub use server::{IpMode, ServerConfig, new_server, server_start, server_stop};
 
@@ -183,6 +190,23 @@ pub use server::{IpMode, ServerConfig, new_server, server_start, server_stop};
 pub type Library = cxx::SharedPtr<ffi::Library>;
 /// Handle to a `kiwix::Server`.
 pub type Server = cxx::SharedPtr<ffi::Server>;
+
+/// Verify that the libkiwix loaded at runtime shares the major version this
+/// crate was built against. Minor/patch differences are accepted. Returns `Err`
+/// with both versions if the major versions differ, so callers can log a
+/// warning or abort startup.
+pub fn verify_linked_version() -> Result<String, (String, &'static str)> {
+    let runtime = libkiwix_runtime_version();
+    if major(&runtime) == major(LIBKIWIX_VERSION) {
+        Ok(runtime)
+    } else {
+        Err((runtime, LIBKIWIX_VERSION))
+    }
+}
+
+fn major(version: &str) -> &str {
+    version.split('.').next().unwrap_or(version)
+}
 
 #[cfg(test)]
 mod tests {
