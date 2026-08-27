@@ -85,4 +85,12 @@
     }
     loadAndDisplayLibraries(bookId);
   });
+
+  // The kiwix wrapper changes the UI language by writing to localStorage;
+  // re-translate live when that happens in another same-origin document.
+  window.addEventListener("storage", (event) => {
+    if (event.key === "userlang") {
+      translatePage();
+    }
+  });
 })();
