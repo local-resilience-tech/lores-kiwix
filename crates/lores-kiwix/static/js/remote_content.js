@@ -1,4 +1,40 @@
 (function () {
+  let translations = {};
+
+  async function loadTranslations() {
+    try {
+      const resp = await fetch("/skin/remote_content.i18n.json");
+      if (resp.ok) {
+        translations = await resp.json();
+      } else {
+        console.error(`Failed to load translations: ${resp.status}`);
+      }
+    } catch (err) {
+      console.error("Failed to load translations", err);
+    }
+  }
+
+  function getUserLanguage() {
+    const params = new URLSearchParams(window.location.search);
+    const queryLang = params.get("userlang");
+    if (queryLang) return queryLang;
+    const storedLang = localStorage.getItem("userlang");
+    if (storedLang) return storedLang;
+    return navigator.language || "en";
+  }
+
+  function translatePage() {
+    const en = translations.en || {};
+    const lang = getUserLanguage().toLowerCase();
+    const strings =
+      translations[lang] || translations[lang.split("-")[0]] || en;
+    document.querySelectorAll("[data-i18n]").forEach((node) => {
+      const key = node.getAttribute("data-i18n");
+      const value = strings[key] || en[key];
+      if (value != null) node.textContent = value;
+    });
+  }
+
   function getBookId() {
     return window.location.pathname.split("/").pop();
   }
@@ -39,7 +75,9 @@
     });
   }
 
-  window.addEventListener("DOMContentLoaded", () => {
+  window.addEventListener("DOMContentLoaded", async () => {
+    await loadTranslations();
+    translatePage();
     const bookId = getBookId();
     if (!bookId) {
       console.error("No book ID found in URL");

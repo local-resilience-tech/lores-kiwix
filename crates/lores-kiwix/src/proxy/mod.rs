@@ -54,6 +54,13 @@ pub fn app(upstream: impl Into<String>, pool: SqlitePool, library: Arc<Mutex<Lib
                 "application/javascript; charset=utf-8",
             )),
         )
+        .route(
+            "/skin/remote_content.i18n.json",
+            any(static_override::handler(
+                "/json/i18n.json",
+                "application/json; charset=utf-8",
+            )),
+        )
         .fallback_service(ReverseProxy::new("/", state.upstream.as_str()))
         .with_state(state)
 }

@@ -1,0 +1,174 @@
+{
+  "en": {
+    "not-at-this-location": "This book is not at this location",
+    "at-other-locations": "However, it is at other locations in your region."
+  },
+  "ar": {
+    "not-at-this-location": "هذا الكتاب غير موجود في هذا الموقع",
+    "at-other-locations": "لكنه متوفر في مواقع أخرى في منطقتك."
+  },
+  "bn": {
+    "not-at-this-location": "এই বইটি এই অবস্থানে নেই",
+    "at-other-locations": "তবে এটি আপনার অঞ্চলের অন্যান্য স্থানে উপলব্ধ।"
+  },
+  "br": {
+    "not-at-this-location": "N'emañ ket al levr-mañ el lec'h-mañ",
+    "at-other-locations": "Met emañ e lec'hioù all en ho rannvro."
+  },
+  "cs": {
+    "not-at-this-location": "Tato kniha se na tomto místě nenachází",
+    "at-other-locations": "Je však dostupná na jiných místech ve vašem regionu."
+  },
+  "dag": {
+    "not-at-this-location": "Buku ŋɔ bi be luɣu ŋɔ ni",
+    "at-other-locations": "Amaa o be luɣshɛli palli ni a tiŋgbani ni."
+  },
+  "de": {
+    "not-at-this-location": "Dieses Buch ist an diesem Standort nicht verfügbar",
+    "at-other-locations": "Es ist jedoch an anderen Standorten in Ihrer Region vorhanden."
+  },
+  "dga": {
+    "not-at-this-location": "Gane ŋa be be a zie ŋa",
+    "at-other-locations": "Amaa o be a zie taaba a fo teŋ pɔ."
+  },
+  "el": {
+    "not-at-this-location": "Αυτό το βιβλίο δεν βρίσκεται σε αυτήν την τοποθεσία",
+    "at-other-locations": "Ωστόσο, βρίσκεται σε άλλες τοποθεσίες στην περιοχή σας."
+  },
+  "es": {
+    "not-at-this-location": "Este libro no está en esta ubicación",
+    "at-other-locations": "Sin embargo, está en otras ubicaciones de su región."
+  },
+  "fi": {
+    "not-at-this-location": "Tätä kirjaa ei ole tässä sijainnissa",
+    "at-other-locations": "Se on kuitenkin saatavilla muissa sijainneissa alueellasi."
+  },
+  "fr": {
+    "not-at-this-location": "Ce livre ne se trouve pas à cet emplacement",
+    "at-other-locations": "Cependant, il est disponible à d'autres emplacements dans votre région."
+  },
+  "ha": {
+    "not-at-this-location": "Wannan littafin ba ya nan a wannan wurin",
+    "at-other-locations": "Amma yana a wasu wuraren a yankinku."
+  },
+  "he": {
+    "not-at-this-location": "הספר הזה אינו נמצא במיקום זה",
+    "at-other-locations": "עם זאת, הוא נמצא במיקומים אחרים באזור שלך."
+  },
+  "hi": {
+    "not-at-this-location": "यह पुस्तक इस स्थान पर नहीं है",
+    "at-other-locations": "हालाँकि, यह आपके क्षेत्र के अन्य स्थानों पर उपलब्ध है।"
+  },
+  "hy": {
+    "not-at-this-location": "Այս գիրքը այս վայրում չկա",
+    "at-other-locations": "Սակայն այն կա ձեր տարածաշրջանի այլ վայրերում։"
+  },
+  "ia": {
+    "not-at-this-location": "Iste libro non es in iste loco",
+    "at-other-locations": "Totevia, illo es in altere locos in vostre region."
+  },
+  "ig": {
+    "not-at-this-location": "Akwụkwọ a adịghị n'ọnọdụ a",
+    "at-other-locations": "Ma, ọ dị n'ebe ndị ọzọ na mpaghara gị."
+  },
+  "it": {
+    "not-at-this-location": "Questo libro non è in questa posizione",
+    "at-other-locations": "Tuttavia, è disponibile in altre posizioni nella tua regione."
+  },
+  "ja": {
+    "not-at-this-location": "この本はこの場所にはありません",
+    "at-other-locations": "ただし、お住まいの地域の他の場所にあります。"
+  },
+  "ko": {
+    "not-at-this-location": "이 책은 이 위치에 없습니다",
+    "at-other-locations": "하지만 귀하의 지역 내 다른 위치에 있습니다."
+  },
+  "ku-latn": {
+    "not-at-this-location": "Ev pirtûk li vê cihê nine",
+    "at-other-locations": "Lê belê ew li cihên din ên herêma we heye."
+  },
+  "lb": {
+    "not-at-this-location": "Dëst Buch ass net op dëser Plaz",
+    "at-other-locations": "Et ass awer op anere Plazen an Ärer Regioun."
+  },
+  "mk": {
+    "not-at-this-location": "Оваа книга не е на оваа локација",
+    "at-other-locations": "Сепак, таа е на други локации во вашиот регион."
+  },
+  "ms": {
+    "not-at-this-location": "Buku ini tiada di lokasi ini",
+    "at-other-locations": "Walau bagaimanapun, ia berada di lokasi lain di rantau anda."
+  },
+  "nl": {
+    "not-at-this-location": "Dit boek bevindt zich niet op deze locatie",
+    "at-other-locations": "Het is echter beschikbaar op andere locaties in uw regio."
+  },
+  "nqo": {
+    "not-at-this-location": "This book is not at this location",
+    "at-other-locations": "However, it is at other locations in your region."
+  },
+  "or": {
+    "not-at-this-location": "ଏହି ପୁସ୍ତକ ଏହି ସ୍ଥାନରେ ନାହିଁ",
+    "at-other-locations": "ତଥାପି, ଏହା ଆପଣଙ୍କ ଅଞ୍ଚଳର ଅନ୍ୟ ସ୍ଥାନରେ ଅଛି।"
+  },
+  "pl": {
+    "not-at-this-location": "Tej książki nie ma w tej lokalizacji",
+    "at-other-locations": "Jest jednak dostępna w innych lokalizacjach w Twoim regionie."
+  },
+  "pt": {
+    "not-at-this-location": "Este livro não está nesta localização",
+    "at-other-locations": "No entanto, está disponível noutras localizações na sua região."
+  },
+  "pt-br": {
+    "not-at-this-location": "Este livro não está nesta localização",
+    "at-other-locations": "No entanto, ele está em outras localizações na sua região."
+  },
+  "ru": {
+    "not-at-this-location": "Эта книга отсутствует в этом местоположении",
+    "at-other-locations": "Однако она есть в других местоположениях в вашем регионе."
+  },
+  "sc": {
+    "not-at-this-location": "Custu libru no est in custu logu",
+    "at-other-locations": "Però est in àteros logos in sa regione tua."
+  },
+  "sk": {
+    "not-at-this-location": "Táto kniha sa na tomto mieste nenachádza",
+    "at-other-locations": "Je však dostupná na iných miestach vo vašom regióne."
+  },
+  "skr-arab": {
+    "not-at-this-location": "ایہ کتاب ایں تھاں تے کائنی",
+    "at-other-locations": "پر ایہ تہاڈے علاقے دیاں ہوریں تھانواں تے موجود ہے۔"
+  },
+  "sl": {
+    "not-at-this-location": "Te knjige ni na tej lokaciji",
+    "at-other-locations": "Vendar je na voljo na drugih lokacijah v vaši regiji."
+  },
+  "sq": {
+    "not-at-this-location": "Ky libër nuk ndodhet në këtë vendndodhje",
+    "at-other-locations": "Megjithatë, ai ndodhet në vendndodhje të tjera në rajonin tuaj."
+  },
+  "sv": {
+    "not-at-this-location": "Den här boken finns inte på den här platsen",
+    "at-other-locations": "Den finns dock på andra platser i din region."
+  },
+  "sw": {
+    "not-at-this-location": "Kitabu hiki hakipo katika eneo hili",
+    "at-other-locations": "Hata hivyo, kipo katika maeneo mengine katika eneo lako."
+  },
+  "te": {
+    "not-at-this-location": "ఈ పుస్తకం ఈ స్థానంలో లేదు",
+    "at-other-locations": "అయితే, ఇది మీ ప్రాంతంలోని ఇతర స్థానాల్లో ఉంది."
+  },
+  "tr": {
+    "not-at-this-location": "Bu kitap bu konumda değil",
+    "at-other-locations": "Ancak bölgenizdeki diğer konumlarda mevcut."
+  },
+  "zh-hans": {
+    "not-at-this-location": "此书不在此位置",
+    "at-other-locations": "但它在您所在区域的其他位置。"
+  },
+  "zh-hant": {
+    "not-at-this-location": "此書不在此位置",
+    "at-other-locations": "但它在您所在區域的其他位置。"
+  }
+}
