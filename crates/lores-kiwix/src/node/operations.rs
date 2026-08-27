@@ -16,6 +16,12 @@ pub struct BookRegisteredDataV1 {
 }
 
 #[derive(Clone, Serialize, Deserialize, Debug)]
+pub struct BookDeregisteredDataV1 {
+    pub book_id: String,
+}
+
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub enum AppOperation {
     BookRegisteredV1(BookRegisteredDataV1),
+    BookDeregisteredV1(BookDeregisteredDataV1),
 }

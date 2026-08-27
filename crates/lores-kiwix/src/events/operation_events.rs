@@ -1,5 +1,5 @@
 use crate::node::LoresKiwixNode;
-use crate::node::operations::{AppOperation, BookRegisteredDataV1};
+use crate::node::operations::{AppOperation, BookDeregisteredDataV1, BookRegisteredDataV1};
 use lores_app_node::AppNodeOperation;
 use sqlx::SqlitePool;
 
@@ -18,6 +18,11 @@ pub fn register(node: &LoresKiwixNode, pool: SqlitePool) {
                         AppOperation::BookRegisteredV1(data) => {
                             if let Err(err) = project_book_registered(&pool, &node_op, data).await {
                                 tracing::error!(error = %err, "Failed to project book registration");
+                            }
+                        }
+                        AppOperation::BookDeregisteredV1(data) => {
+                            if let Err(err) = project_book_deregistered(&pool, &node_op, data).await {
+                                tracing::error!(error = %err, "Failed to project book deregistration");
                             }
                         }
                     }
@@ -49,4 +54,13 @@ async fn project_book_registered(
     }
 
     tx.commit().await
+}
+
+async fn project_book_deregistered(
+    pool: &SqlitePool,
+    _node_op: &AppNodeOperation<AppOperation>,
+    data: &BookDeregisteredDataV1,
+) -> Result<(), sqlx::Error> {
+    holdings::delete_local_holding(pool, &data.book_id).await?;
+    Ok(())
 }

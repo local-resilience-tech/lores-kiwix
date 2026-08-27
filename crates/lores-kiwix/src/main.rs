@@ -62,7 +62,7 @@ async fn main() {
     // Wait for the node to finish replay before publishing startup operations.
     let _ = ready_rx.changed().await;
 
-    sync_filesystem(&mut library, &node, path).await;
+    sync_filesystem(&mut library, &projection_pool, &node, path).await;
 
     let public_bind = args
         .get(2)
