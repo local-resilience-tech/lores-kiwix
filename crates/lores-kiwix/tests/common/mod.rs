@@ -62,9 +62,7 @@ fn boot_config(app_id: &str, data_dir: &std::path::Path, path: String) -> BootCo
         instance_id: INSTANCE_ID.to_string(),
         data_dir: data_dir.to_string_lossy().to_string(),
         internal_bind: "127.0.0.1:0".to_string(),
-        projection_db: ProjectionDbConfig::OnDisk(
-            data_dir.join("projection.sqlite").to_string_lossy().to_string(),
-        ),
+        projection_db: ProjectionDbConfig::OnDisk(data_dir.join("projection.sqlite").to_string_lossy().to_string()),
     }
 }
 
