@@ -1187,6 +1187,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "lores-dev-server"
+version = "0.2.0"
+dependencies = [
+ "futures",
+ "hex",
+ "lores-p2panda-client 0.4.0",
+ "sha2",
+ "tokio",
+ "tokio-stream",
+ "tonic",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
 name = "lores-kiwix"
 version = "0.1.0"
 dependencies = [
@@ -1198,11 +1213,17 @@ dependencies = [
  "indoc",
  "libkiwix-rust",
  "lores-app-node",
+ "lores-dev-server 0.2.0",
  "pretty_assertions",
  "reqwest",
  "serde",
+ "serde_json",
+ "sha2",
  "sqlx",
+ "tempfile",
  "tokio",
+ "tokio-stream",
+ "tonic",
  "tracing",
  "tracing-subscriber",
  "url",
@@ -1212,7 +1233,7 @@ dependencies = [
 name = "lores-kiwix-dev-server"
 version = "0.1.0"
 dependencies = [
- "lores-dev-server",
+ "lores-dev-server 0.1.0",
  "tokio",
  "tonic",
  "tracing-subscriber",
