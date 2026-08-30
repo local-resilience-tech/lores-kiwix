@@ -58,9 +58,14 @@ async fn project_book_registered(
 
 async fn project_book_deregistered(
     pool: &SqlitePool,
-    _node_op: &AppNodeOperation<AppOperation>,
+    node_op: &AppNodeOperation<AppOperation>,
     data: &BookDeregisteredDataV1,
 ) -> Result<(), sqlx::Error> {
-    holdings::delete_local_holding(pool, &data.book_id).await?;
+    if let Some(node) = &node_op.author_node_id {
+        let node_id = hex::encode(&node.0);
+        holdings::delete_holding_for_node(pool, &data.book_id, &node_id).await?;
+    } else {
+        holdings::delete_local_holding(pool, &data.book_id).await?;
+    }
     Ok(())
 }

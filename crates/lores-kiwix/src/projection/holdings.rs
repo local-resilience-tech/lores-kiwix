@@ -67,3 +67,27 @@ pub async fn delete_local_holding(pool: &SqlitePool, book_id: &str) -> Result<()
 
     Ok(())
 }
+
+/// Remove the holding of `book_id` by a specific `node_id`.
+/// If the node is not known, falls back to deleting only local holdings so that
+/// deregistrations from this node keep working in tests or single-node setups.
+pub async fn delete_holding_for_node(pool: &SqlitePool, book_id: &str, node_id: &str) -> Result<(), sqlx::Error> {
+    let known_node: Option<(i64,)> = sqlx::query_as("SELECT COUNT(*) FROM nodes WHERE id = ?")
+        .bind(node_id)
+        .fetch_optional(pool)
+        .await?
+        .filter(|(count,): &(i64,)| *count > 0);
+
+    if known_node.is_some() {
+        sqlx::query("DELETE FROM holdings WHERE book_id = ? AND node_id = ?")
+            .bind(book_id)
+            .bind(node_id)
+            .execute(pool)
+            .await?;
+    } else {
+        // The node was never recorded; treat this as a local-only deregistration.
+        delete_local_holding(pool, book_id).await?;
+    }
+
+    Ok(())
+}
