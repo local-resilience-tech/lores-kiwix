@@ -13,6 +13,9 @@ pub const SMALL_BOOK_ID: &str = "eeb924bb-0f5b-60f6-9d13-1259f6516ae7";
 pub const SMALL_BOOK_TITLE: &str = "=Test ZIM file";
 pub const APP_ID: &str = "lores-kiwix-test";
 pub const INSTANCE_ID: &str = "test-instance";
+pub const REMOTE_INSTANCE_ID: &str = "remote-instance";
+pub const REMOTE_BOOK_ID: &str = "22222222-2222-2222-2222-222222222222";
+pub const REMOTE_BOOK_TITLE: &str = "Remote Book";
 
 pub fn fixture_path(name: &str) -> PathBuf {
     let mut path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -183,4 +186,48 @@ pub async fn wait_for_operations(dev_server: &DevPandaService, app_id: &str) {
         }
         sleep(Duration::from_millis(10)).await;
     }
+}
+
+/// The dev-server-derived node id for the fake remote instance.
+pub fn remote_node_id() -> String {
+    hex::encode(Sha256::digest(REMOTE_INSTANCE_ID.as_bytes()))
+}
+
+/// Publish an operation to the dev server as if it came from a different
+/// app instance (i.e. a remote node).
+pub async fn publish_remote_operation(grpc_addr: &str, app_id: &str, instance_id: &str, payload: Vec<u8>) {
+    use lores_dev_server::proto::PublishRequest;
+    use lores_dev_server::proto::panda_client::PandaClient;
+
+    let mut client = PandaClient::connect(grpc_addr.to_string())
+        .await
+        .expect("failed to connect to dev server");
+
+    let request = PublishRequest {
+        app_id: app_id.to_string(),
+        instance_id: instance_id.to_string(),
+        payload,
+        idempotency_key: Vec::new(),
+    };
+
+    client
+        .publish(request)
+        .await
+        .expect("failed to publish remote operation");
+}
+
+/// Poll the projection database until the given book appears.
+pub async fn wait_for_projection_book(pool: &sqlx::SqlitePool, book_id: &str) {
+    for _ in 0..50 {
+        let row: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM books WHERE id = ?")
+            .bind(book_id)
+            .fetch_one(pool)
+            .await
+            .expect("failed to query books projection");
+        if row.0 > 0 {
+            return;
+        }
+        sleep(Duration::from_millis(10)).await;
+    }
+    panic!("book {book_id} was not projected in time");
 }
