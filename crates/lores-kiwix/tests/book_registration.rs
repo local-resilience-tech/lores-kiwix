@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use lores_dev_server::proto::panda_server::PandaServer;
 use lores_dev_server::service::DevPandaService;
-use lores_kiwix::node::operations::{AppOperation, BookRegisteredDataV1};
+use lores_kiwix::node::operations::{AppOperation, BookDeregisteredDataV1, BookRegisteredDataV1};
 use lores_kiwix::{BootConfig, boot};
 use sha2::{Digest, Sha256};
 use tokio::net::TcpListener;
@@ -140,12 +140,37 @@ async fn seed_projection_with_local_holding(data_dir: &std::path::Path) {
     sqlx::query("INSERT INTO holdings (book_id, node_id) VALUES (?, ?)")
         .bind(SMALL_BOOK_ID)
         .bind(&local_node_id)
-        .bind(SMALL_BOOK_ID)
         .execute(&pool)
         .await
         .expect("failed to insert holding");
 
     pool.close().await;
+}
+
+/// Boot lores-kiwix with an empty fixtures directory (no ZIM files present).
+async fn boot_with_empty_dir(grpc_addr: String, app_id: &str, data_dir: std::path::PathBuf) -> lores_kiwix::BootResult {
+    tokio::fs::create_dir_all(&data_dir)
+        .await
+        .expect("failed to create data dir");
+
+    let empty_dir = data_dir.parent().unwrap().join("empty");
+    tokio::fs::create_dir_all(&empty_dir)
+        .await
+        .expect("failed to create empty dir");
+
+    let config = BootConfig {
+        path: empty_dir.to_string_lossy().to_string(),
+        panda_grpc_addr: grpc_addr,
+        app_id: app_id.to_string(),
+        instance_id: "test-instance".to_string(),
+        data_dir: data_dir.to_string_lossy().to_string(),
+        internal_bind: "127.0.0.1:0".to_string(),
+        projection_db: lores_kiwix::ProjectionDbConfig::OnDisk(
+            data_dir.join("projection.sqlite").to_string_lossy().to_string(),
+        ),
+    };
+
+    boot(&config).await.expect("failed to boot lores-kiwix")
 }
 
 async fn wait_for_operations(dev_server: &DevPandaService, app_id: &str) {
@@ -208,6 +233,52 @@ async fn publishes_book_registered_for_single_new_zim_file() {
         .await
         .expect("failed to query projection");
     assert_eq!(row.0, 1, "expected book to be recorded in projection");
+}
+
+#[tokio::test]
+async fn publishes_book_deregistered_when_previously_held_book_is_missing() {
+    let (grpc_addr, dev_server) = start_dev_server().await;
+    let app_id = "lores-kiwix-test";
+
+    let (_temp_dir, data_dir) = temp_data_dir();
+
+    // Seed the projection database as if this node previously held the book.
+    seed_projection_with_local_holding(&data_dir).await;
+
+    // Boot with an empty directory: the previously held book is now missing,
+    // so a deregistration operation should be published.
+    let result = boot_with_empty_dir(grpc_addr, app_id, data_dir).await;
+
+    wait_for_operations(&dev_server, app_id).await;
+
+    let operations = dev_server.operations_for_app(app_id).await;
+    assert_eq!(operations.len(), 1, "expected exactly one deregistration operation");
+
+    let event: AppOperation = serde_json::from_slice(&operations[0].payload).expect("payload is valid JSON");
+
+    let AppOperation::BookDeregisteredV1(BookDeregisteredDataV1 { book_id }) = event else {
+        panic!("expected BookDeregisteredV1, got {:?}", event);
+    };
+    assert_eq!(book_id, SMALL_BOOK_ID);
+
+    // The local holding should be removed, but the book record remains.
+    let row: (i64,) = sqlx::query_as("SELECT COUNT(*) FROM books WHERE id = ?")
+        .bind(SMALL_BOOK_ID)
+        .fetch_one(&result.projection_pool)
+        .await
+        .expect("failed to query books projection");
+    assert_eq!(row.0, 1, "expected book row to remain");
+
+    let row: (i64,) = sqlx::query_as(
+        "SELECT COUNT(*) FROM holdings
+         INNER JOIN nodes ON holdings.node_id = nodes.id
+         WHERE book_id = ? AND nodes.local IS TRUE",
+    )
+    .bind(SMALL_BOOK_ID)
+    .fetch_one(&result.projection_pool)
+    .await
+    .expect("failed to query holdings projection");
+    assert_eq!(row.0, 0, "expected local holding row to be removed");
 }
 
 #[tokio::test]

@@ -57,10 +57,8 @@ pub async fn delete_local_holding(pool: &SqlitePool, book_id: &str) -> Result<()
     sqlx::query(
         r#"
         DELETE FROM holdings
-        INNER JOIN nodes ON holdings.node_id = nodes.id
-        WHERE
-            nodes.local IS TRUE AND
-            holdings.book_id = ?
+        WHERE book_id = ?
+          AND node_id IN (SELECT id FROM nodes WHERE local IS TRUE)
     "#,
     )
     .bind(book_id)
