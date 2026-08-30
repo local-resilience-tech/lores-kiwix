@@ -1,0 +1,10 @@
+[package]
+name = "lores-kiwix-dev-server"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+lores-dev-server = "0.1.0"
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+tonic = "0.14"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }

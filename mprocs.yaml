@@ -7,7 +7,7 @@
 procs:
   panda-dev-server:
     cwd: <CONFIG_DIR>
-    shell: "cargo build --manifest-path \"$LORES_NODE_BACKEND/Cargo.toml\" -p lores-p2panda-dev-server && exec \"$LORES_NODE_BACKEND/target/debug/lores-p2panda-dev-server\""
+    shell: "cargo build -p lores-kiwix-dev-server && exec ./target/debug/lores-kiwix-dev-server"
   kiwix-a:
     cwd: <CONFIG_DIR>
     shell: >-
