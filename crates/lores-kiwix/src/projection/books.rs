@@ -130,7 +130,7 @@ where
     let query_text = build_query_text(data);
 
     sqlx::query(
-        "INSERT OR REPLACE INTO books (
+        "INSERT OR IGNORE INTO books (
             id,
             name,
             date,

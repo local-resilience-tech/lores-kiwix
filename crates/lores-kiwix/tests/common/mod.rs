@@ -14,6 +14,7 @@ pub const SMALL_BOOK_TITLE: &str = "=Test ZIM file";
 pub const APP_ID: &str = "lores-kiwix-test";
 pub const INSTANCE_ID: &str = "test-instance";
 pub const REMOTE_INSTANCE_ID: &str = "remote-instance";
+pub const REMOTE_INSTANCE_ID_2: &str = "remote-instance-2";
 pub const REMOTE_BOOK_ID: &str = "22222222-2222-2222-2222-222222222222";
 pub const REMOTE_BOOK_TITLE: &str = "Remote Book";
 
@@ -188,9 +189,14 @@ pub async fn wait_for_operations(dev_server: &DevPandaService, app_id: &str) {
     }
 }
 
-/// The dev-server-derived node id for the fake remote instance.
+/// The dev-server-derived node id for the first fake remote instance.
 pub fn remote_node_id() -> String {
     hex::encode(Sha256::digest(REMOTE_INSTANCE_ID.as_bytes()))
+}
+
+/// The dev-server-derived node id for the second fake remote instance.
+pub fn remote_node_id_2() -> String {
+    hex::encode(Sha256::digest(REMOTE_INSTANCE_ID_2.as_bytes()))
 }
 
 /// Publish an operation to the dev server as if it came from a different
