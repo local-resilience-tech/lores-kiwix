@@ -237,3 +237,17 @@ pub async fn wait_for_projection_book(pool: &sqlx::SqlitePool, book_id: &str) {
     }
     panic!("book {book_id} was not projected in time");
 }
+
+/// Build the lores-kiwix API router from a `BootResult` and serve it on an
+/// ephemeral port. Returns the base URL of the bound API server.
+pub async fn start_api_server(result: lores_kiwix::BootResult) -> String {
+    let app = lores_kiwix::proxy::app(&result.upstream, result.projection_pool, result.shared_library, result.node);
+    let listener = TcpListener::bind("127.0.0.1:0").await.expect("failed to bind API server");
+    let addr = listener.local_addr().expect("failed to get local address");
+
+    tokio::spawn(async move {
+        axum::serve(listener, app).await.expect("API server failed");
+    });
+
+    format!("http://{addr}")
+}
