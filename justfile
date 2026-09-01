@@ -29,3 +29,12 @@ build:
 # Build and run just the dev gRPC server.
 run-dev-server:
     cargo run -p lores-kiwix-dev-server
+
+# Build the Docker image and run a container from it.
+docker-run ZIM_PATH=ZIM_DIR PORT="8080":
+    docker build -t lores-kiwix .
+    exec docker run --rm -it \
+        -p {{PORT}}:8080 \
+        -e PANDA_GRPC_ADDR={{PANDA_GRPC_ADDR}} \
+        -v "$PWD/{{ZIM_PATH}}":/zim:ro \
+        lores-kiwix /zim 0.0.0.0:8080

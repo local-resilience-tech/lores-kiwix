@@ -1,3 +1,4 @@
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 use axum::{
@@ -68,6 +69,20 @@ pub fn app(
         )
         .fallback_service(ReverseProxy::new("/", state.upstream.as_str()))
         .with_state(state)
+}
+
+/// Return the directory containing static override files.
+///
+/// Uses the `LORES_KIWIX_STATIC_DIR` environment variable if set, otherwise
+/// falls back to the `static` directory inside the crate source tree (works for
+/// tests and local development). When the binary is relocated, set the env var
+/// to point at the copied static assets.
+pub fn static_dir() -> PathBuf {
+    if let Ok(dir) = std::env::var("LORES_KIWIX_STATIC_DIR") {
+        return PathBuf::from(dir);
+    }
+
+    PathBuf::from(concat!(env!("CARGO_MANIFEST_DIR"), "/static"))
 }
 
 /// Build a simple text error response for proxy failures.
