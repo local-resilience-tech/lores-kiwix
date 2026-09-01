@@ -20,7 +20,12 @@ mod static_override;
 
 /// Build an Axum application that proxies every request to `upstream`,
 /// except for routes that are specifically overwritten.
-pub fn app(upstream: impl Into<String>, pool: SqlitePool, library: Arc<Mutex<LibraryHandle>>, node: LoresKiwixNode) -> Router {
+pub fn app(
+    upstream: impl Into<String>,
+    pool: SqlitePool,
+    library: Arc<Mutex<LibraryHandle>>,
+    node: LoresKiwixNode,
+) -> Router {
     let state = ApiState::new(upstream, pool, library, node);
 
     Router::new()

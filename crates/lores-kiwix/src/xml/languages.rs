@@ -33,8 +33,10 @@ pub fn build_feed_root(now: DateTime<Utc>) -> Element {
 /// Build an Atom `<entry>` element for a single language.
 pub fn build_language(entry: &LanguageEntry, now: DateTime<Utc>, feed: &Element) -> Element {
     let mut el = Element::new_with_namespaces((ATOM_NS, "entry"), feed);
-    el.append_new_child((ATOM_NS, "title")).set_text(entry.lang_name.as_str());
-    el.append_new_child((DC_NS, "language")).set_text(entry.lang_code.as_str());
+    el.append_new_child((ATOM_NS, "title"))
+        .set_text(entry.lang_name.as_str());
+    el.append_new_child((DC_NS, "language"))
+        .set_text(entry.lang_code.as_str());
     el.append_new_child((THR_NS, "count"))
         .set_text(entry.book_count.to_string());
     el.append_new_child((ATOM_NS, "link"))
@@ -65,9 +67,11 @@ mod tests {
             .unwrap()
             .to_utc();
         let mut feed = build_feed_root(now);
-        let languages = vec![
-            LanguageEntry { lang_code: "eng".to_string(), lang_name: "English".to_string(), book_count: 3 },
-        ];
+        let languages = vec![LanguageEntry {
+            lang_code: "eng".to_string(),
+            lang_name: "English".to_string(),
+            book_count: 3,
+        }];
         for lang in &languages {
             let entry = build_language(lang, now, &feed);
             feed.append_child(entry);

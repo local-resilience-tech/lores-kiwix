@@ -10,7 +10,7 @@ chrono = { version = "0.4", default-features = false, features = ["clock"] }
 elementtree = "1.2"
 hex = "0.4"
 libkiwix-rust = { path = "../libkiwix-rust" }
-lores-app-node = { path = "../../../lores-node/backend/lores-app-node" }
+lores-app-node = { version = "0.1.0" }
 reqwest = { version = "0.12", default-features = false, features = ["stream"] }
 serde = { version = "1", features = ["derive"] }
 sqlx = { workspace = true, features = ["derive"] }
@@ -21,7 +21,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [dev-dependencies]
 indoc = "2"
-lores-dev-server = { version = "0.2.0", path = "../../../lores-node/backend/lores-dev-server" }
+lores-dev-server = "0.2.0"
 pretty_assertions = "1"
 serde_json = "1"
 sha2 = "0.10"

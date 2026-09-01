@@ -1,0 +1,40 @@
+name: Test
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:26.04
+
+    steps:
+      - name: Install system dependencies
+        run: |
+          apt-get update
+          apt-get install -y build-essential pkg-config libkiwix-dev protobuf-compiler curl ca-certificates git
+
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build artifacts
+        uses: Swatinem/rust-cache@v2
+
+      - name: Run integration tests
+        run: |
+          cargo test --manifest-path crates/lores-kiwix/Cargo.toml \
+            --test local_registration \
+            --test local_deregistration \
+            --test remote_registration \
+            --test remote_deregistration \
+            --test api \
+            --test static
