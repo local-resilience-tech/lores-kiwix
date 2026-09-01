@@ -4,8 +4,8 @@ mod common;
 
 use common::{
     APP_ID, REMOTE_BOOK_ID, REMOTE_BOOK_TITLE, REMOTE_INSTANCE_ID, SMALL_BOOK_ID, SMALL_BOOK_TITLE,
-    boot_with_empty_dir, boot_with_fixture, publish_remote_operation, start_api_server, start_dev_server,
-    temp_data_dir, wait_for_projection_book,
+    boot_with_empty_dir, boot_with_fixture, publish_remote_operation, remote_node_id, start_api_server,
+    start_dev_server, temp_data_dir, wait_for_projection_book,
 };
 
 #[tokio::test]
@@ -148,5 +148,105 @@ async fn catalog_categories_merges_local_and_remote_categories() {
     // The response should contain exactly one category entry for "remote".
     let entries = body.matches("<entry").count();
     assert_eq!(entries, 1, "expected exactly one category entry, got {entries}");
-    assert!(body.contains("remote"), "expected categories to include 'remote', got: {body}");
+    assert!(
+        body.contains("remote"),
+        "expected categories to include 'remote', got: {body}"
+    );
+}
+
+#[tokio::test]
+async fn catalog_languages_merges_local_and_remote_languages() {
+    let (grpc_addr, _dev_server) = start_dev_server().await;
+
+    let (_temp_dir, data_dir) = temp_data_dir();
+    let result = boot_with_empty_dir(grpc_addr.clone(), APP_ID, data_dir).await;
+
+    // Give the local node time to subscribe before the remote operation is published.
+    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+
+    let operation = AppOperation::BookRegisteredV1(BookRegisteredDataV1 {
+        book_id: REMOTE_BOOK_ID.to_string(),
+        name: "remote-book".to_string(),
+        date: "2024-01-01".to_string(),
+        flavour: "".to_string(),
+        title: REMOTE_BOOK_TITLE.to_string(),
+        description: "A book registered by a remote node".to_string(),
+        language: "eng".to_string(),
+        creator: "Remote Creator".to_string(),
+        publisher: "Remote Publisher".to_string(),
+        category: "remote".to_string(),
+        tags: "_ftindex:yes".to_string(),
+    });
+    let payload = serde_json::to_vec(&operation).expect("failed to serialize operation");
+    publish_remote_operation(&grpc_addr, APP_ID, REMOTE_INSTANCE_ID, payload).await;
+
+    wait_for_projection_book(&result.projection_pool, REMOTE_BOOK_ID).await;
+
+    let api_url = start_api_server(result).await;
+
+    let client = reqwest::Client::new();
+    let response = client
+        .get(format!("{api_url}/catalog/v2/languages"))
+        .send()
+        .await
+        .expect("failed to request languages");
+
+    assert_eq!(response.status(), 200, "expected languages to return OK");
+
+    let body = response.text().await.expect("failed to read response body");
+
+    // The response should contain exactly one language entry for "eng".
+    let entries = body.matches("<entry").count();
+    assert_eq!(entries, 1, "expected exactly one language entry, got {entries}");
+    assert!(body.contains("eng"), "expected languages to include 'eng', got: {body}");
+}
+
+#[tokio::test]
+async fn holding_libraries_returns_remote_node_holding_the_book() {
+    let (grpc_addr, _dev_server) = start_dev_server().await;
+
+    let (_temp_dir, data_dir) = temp_data_dir();
+    let result = boot_with_empty_dir(grpc_addr.clone(), APP_ID, data_dir).await;
+
+    // Give the local node time to subscribe before the remote operation is published.
+    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+
+    let operation = AppOperation::BookRegisteredV1(BookRegisteredDataV1 {
+        book_id: REMOTE_BOOK_ID.to_string(),
+        name: "remote-book".to_string(),
+        date: "2024-01-01".to_string(),
+        flavour: "".to_string(),
+        title: REMOTE_BOOK_TITLE.to_string(),
+        description: "A book registered by a remote node".to_string(),
+        language: "eng".to_string(),
+        creator: "Remote Creator".to_string(),
+        publisher: "Remote Publisher".to_string(),
+        category: "remote".to_string(),
+        tags: "_ftindex:yes".to_string(),
+    });
+    let payload = serde_json::to_vec(&operation).expect("failed to serialize operation");
+    publish_remote_operation(&grpc_addr, APP_ID, REMOTE_INSTANCE_ID, payload).await;
+
+    wait_for_projection_book(&result.projection_pool, REMOTE_BOOK_ID).await;
+
+    let api_url = start_api_server(result).await;
+
+    let client = reqwest::Client::new();
+    let response = client
+        .get(format!("{api_url}/catalog/v2/entries/{REMOTE_BOOK_ID}/holding_libraries"))
+        .send()
+        .await
+        .expect("failed to request holding libraries");
+
+    assert_eq!(response.status(), 200, "expected holding libraries to return OK");
+
+    let body = response.text().await.expect("failed to read response body");
+
+    // The response should contain exactly one entry for the remote node.
+    let entries = body.matches("<entry").count();
+    assert_eq!(entries, 1, "expected exactly one holding library entry, got {entries}");
+    assert!(
+        body.contains(&remote_node_id()),
+        "expected holding libraries to include remote node id, got: {body}"
+    );
 }
