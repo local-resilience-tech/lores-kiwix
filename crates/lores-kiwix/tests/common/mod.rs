@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use std::path::PathBuf;
 
 use lores_dev_server::proto::panda_server::PandaServer;
