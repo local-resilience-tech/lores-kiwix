@@ -23,7 +23,12 @@ pub struct ApiState {
 }
 
 impl ApiState {
-    pub fn new(upstream: impl Into<String>, pool: SqlitePool, library: Arc<Mutex<LibraryHandle>>, node: LoresKiwixNode) -> Self {
+    pub fn new(
+        upstream: impl Into<String>,
+        pool: SqlitePool,
+        library: Arc<Mutex<LibraryHandle>>,
+        node: LoresKiwixNode,
+    ) -> Self {
         Self {
             client: Client::new(),
             no_redirect_client: Client::builder()

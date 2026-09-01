@@ -20,4 +20,3 @@ pub async fn create_projection_db() -> Result<(SqlitePool, bool), sqlx::Error> {
 pub async fn open_projection_db(path: &str) -> Result<(SqlitePool, bool), sqlx::Error> {
     ProjectionDb::open(path, SCHEMA).await
 }
-

@@ -10,7 +10,10 @@ use crate::utilities::{filter::FilterCriteria, pagination::Paginator};
 use crate::xml::entries::{build_entry, build_feed_root};
 use crate::xml::render_xml;
 use crate::{api::ApiState, proxy::proxy_error};
-use crate::{projection::{books, holdings}, utilities::book::{LoResBook, LoResBookSource}};
+use crate::{
+    projection::{books, holdings},
+    utilities::book::{LoResBook, LoResBookSource},
+};
 
 /// Serve the `/catalog/v2/entries` endpoint directly from the local libkiwix
 /// library instead of proxying to the upstream kiwix server.
@@ -66,11 +69,15 @@ pub async fn handler(State(state): State<ApiState>, req: Request) -> Response {
     let holdings_map = holdings::fetch_holdings_for_books(&state.pool, &extra_page_ids)
         .await
         .unwrap_or_default();
-    let extra_page_books: Vec<LoResBook> = extra_page.items.iter().map(|book| LoResBook {
-        holdings: holdings_map.get(&book.id).cloned().unwrap_or_default(),
-        source: LoResBookSource::Remote,
-        book: book.clone().into(),
-    }).collect();
+    let extra_page_books: Vec<LoResBook> = extra_page
+        .items
+        .iter()
+        .map(|book| LoResBook {
+            holdings: holdings_map.get(&book.id).cloned().unwrap_or_default(),
+            source: LoResBookSource::Remote,
+            book: book.clone().into(),
+        })
+        .collect();
 
     let result = CatalogueEntriesResult {
         books: page_books.iter().cloned().chain(extra_page_books).collect(),

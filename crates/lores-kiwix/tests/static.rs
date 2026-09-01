@@ -56,8 +56,7 @@ async fn serves_static_override_for_skin_index_js() {
         .to_str()
         .expect("content-type is not valid UTF-8");
     assert_eq!(
-        content_type,
-        "application/javascript; charset=utf-8",
+        content_type, "application/javascript; charset=utf-8",
         "expected javascript content type"
     );
 
@@ -122,8 +121,7 @@ async fn serves_static_override_for_remote_content_js() {
         .to_str()
         .expect("content-type is not valid UTF-8");
     assert_eq!(
-        content_type,
-        "application/javascript; charset=utf-8",
+        content_type, "application/javascript; charset=utf-8",
         "expected javascript content type"
     );
 
@@ -157,8 +155,7 @@ async fn serves_static_override_for_remote_content_i18n_json() {
         .to_str()
         .expect("content-type is not valid UTF-8");
     assert_eq!(
-        content_type,
-        "application/json; charset=utf-8",
+        content_type, "application/json; charset=utf-8",
         "expected application/json content type"
     );
 
