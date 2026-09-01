@@ -11,15 +11,17 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    container:
+      image: ubuntu:26.04
 
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
       - name: Install system dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y pkg-config libkiwix14 libkiwix-dev protobuf-compiler
+          apt-get update
+          apt-get install -y pkg-config libkiwix-dev protobuf-compiler curl ca-certificates git
+
+      - name: Check out repository
+        uses: actions/checkout@v4
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
