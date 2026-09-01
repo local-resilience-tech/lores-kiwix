@@ -21,7 +21,7 @@ tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 [dev-dependencies]
 indoc = "2"
-lores-dev-server = { version = "0.2.0", path = "../../../lores-node/backend/lores-dev-server" }
+lores-dev-server = "0.2.0"
 pretty_assertions = "1"
 serde_json = "1"
 sha2 = "0.10"

@@ -1189,10 +1189,12 @@ dependencies = [
 [[package]]
 name = "lores-dev-server"
 version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "24d79e3144afaa62efb9cb7310eea5f2e34808e2d28d8f6deccce2ce8bcf6b97"
 dependencies = [
  "futures",
  "hex",
- "lores-p2panda-client 0.4.0",
+ "lores-p2panda-client 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "sha2",
  "tokio",
  "tokio-stream",
