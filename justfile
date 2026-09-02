@@ -36,8 +36,8 @@ docker-run ZIM_PATH=ZIM_DIR PORT="8080":
     docker build -t lores-kiwix .
     docker run --rm -it \
         --init \
-        -p {{PORT}}:8080 \
-        -e PANDA_GRPC_ADDR={{PANDA_GRPC_ADDR}} \
+        --network host \
+        -e PANDA_GRPC_ADDR=http://127.0.0.1:50051 \
         -v "{{absolute_path(ZIM_PATH)}}":/zim:ro \
         --name lores-kiwix \
         lores-kiwix /zim 0.0.0.0:8080
