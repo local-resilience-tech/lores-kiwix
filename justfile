@@ -31,13 +31,14 @@ run-dev-server:
     cargo run -p lores-kiwix-dev-server
 
 # Build the Docker image and run a container from it.
+# ZIM_PATH can be relative (from the justfile directory) or absolute.
 docker-run ZIM_PATH=ZIM_DIR PORT="8080":
     docker build -t lores-kiwix .
     docker run --rm -it \
         --init \
         -p {{PORT}}:8080 \
         -e PANDA_GRPC_ADDR={{PANDA_GRPC_ADDR}} \
-        -v "$PWD/{{ZIM_PATH}}":/zim:ro \
+        -v "{{absolute_path(ZIM_PATH)}}":/zim:ro \
         --name lores-kiwix \
         lores-kiwix /zim 0.0.0.0:8080
 
