@@ -71,6 +71,16 @@ RUN apt-get update \
 COPY --from=builder /app/lores-kiwix-bin /usr/local/bin/lores-kiwix
 COPY --from=builder /app/crates/lores-kiwix/static /usr/local/share/lores-kiwix/static
 
+# Configuration environment variables:
+#   PANDA_GRPC_ADDR        Address of the lores-node gRPC endpoint.
+#   LORES_APP_ID           Application identifier for p2panda topics.
+#   LORES_INSTANCE_ID      Instance identifier for p2panda topics.
+#   DATA_DIR               Directory for the operations SQLite database.
+#   KIWIX_INTERNAL_BIND    Bind address for the internal libkiwix HTTP server.
+#   LORES_KIWIX_STATIC_DIR Directory containing static override assets.
+#
+# ZIM files are provided at runtime by mounting a host directory:
+#   docker run -v /path/to/zims:/zim:ro lores-kiwix /zim 0.0.0.0:8080
 ENV DATA_DIR=/data
 ENV KIWIX_INTERNAL_BIND=127.0.0.1:18080
 ENV LORES_KIWIX_STATIC_DIR=/usr/local/share/lores-kiwix/static
