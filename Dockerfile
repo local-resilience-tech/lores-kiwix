@@ -49,7 +49,7 @@ RUN --mount=type=cache,target=/var/cache/apt \
         && printf '' > /app/.buildenv; \
     fi
 
-COPY deployment/cargo-config.toml ./.cargo/config
+COPY deployment/cargo-config.toml ./.cargo/config.toml
 
 COPY . .
 
