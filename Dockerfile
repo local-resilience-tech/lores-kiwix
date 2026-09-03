@@ -31,22 +31,34 @@ RUN ./platform.sh
 
 RUN rustup target add $(cat .platform)
 
-# Install libkiwix for the target architecture. For ARM/v7 we add the armhf
-# architecture and cross-compile; for amd64 we build natively.
-RUN --mount=type=cache,target=/var/cache/apt \
-    if [ "$TARGETARCH" = "arm" ]; then \
-        dpkg --add-architecture armhf \
+# Install libkiwix for the target architecture. For cross-compiled arches
+# (arm/v7, arm64) the target libraries come from ports.ubuntu.com and are
+# extracted rather than configured, since their maintainer scripts would run
+# target-arch binaries that cannot execute on the amd64 build host. For amd64
+# we build natively. platform.sh has already written .dpkgarch, .compiler and
+# .buildenv for the selected TARGETARCH.
+RUN --mount=type=cache,target=/var/cache/apt,id=apt-$TARGETARCH$TARGETVARIANT,sharing=locked \
+    DPKG_ARCH="$(cat .dpkgarch)"; \
+    if [ -n "$DPKG_ARCH" ]; then \
+        dpkg --add-architecture "$DPKG_ARCH" \
+        && CODENAME="$(. /etc/os-release && echo "$VERSION_CODENAME")" \
+        && printf 'Types: deb\nURIs: http://archive.ubuntu.com/ubuntu\nSuites: %s %s-updates %s-backports\nComponents: main restricted universe multiverse\nArchitectures: amd64\nSigned-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg\n\nTypes: deb\nURIs: http://security.ubuntu.com/ubuntu\nSuites: %s-security\nComponents: main restricted universe multiverse\nArchitectures: amd64\nSigned-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg\n\nTypes: deb\nURIs: http://ports.ubuntu.com/ubuntu-ports\nSuites: %s %s-updates %s-backports %s-security\nComponents: main restricted universe multiverse\nArchitectures: %s\nSigned-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg\n' \
+            "$CODENAME" "$CODENAME" "$CODENAME" "$CODENAME" "$CODENAME" "$CODENAME" "$CODENAME" "$CODENAME" "$DPKG_ARCH" \
+            > /etc/apt/sources.list.d/ubuntu.sources \
         && apt-get update \
-        && apt-get install -y --no-install-recommends \
-            $(cat .compiler) \
-            libkiwix-dev:armhf \
-        && rm -rf /var/lib/apt/lists/* \
-        && printf 'PKG_CONFIG_LIBDIR=/usr/lib/arm-linux-gnueabihf/pkgconfig\nPKG_CONFIG_SYSROOT_DIR=/\nCC=arm-linux-gnueabihf-gcc\nCXX=arm-linux-gnueabihf-g++\n' > /app/.buildenv; \
+        && apt-get install -y --no-install-recommends $(cat .compiler) \
+        && apt-get install -y --no-install-recommends --download-only libkiwix-dev:"$DPKG_ARCH" \
+        && for deb in /var/cache/apt/archives/*.deb; do \
+            [ -e "$deb" ] || continue; \
+            if [ "$(dpkg-deb -f "$deb" Architecture)" = "$DPKG_ARCH" ]; then \
+                dpkg-deb -x "$deb" /; \
+            fi; \
+        done \
+        && rm -rf /var/lib/apt/lists/*; \
     else \
         apt-get update \
         && apt-get install -y --no-install-recommends libkiwix-dev \
-        && rm -rf /var/lib/apt/lists/* \
-        && printf '' > /app/.buildenv; \
+        && rm -rf /var/lib/apt/lists/*; \
     fi
 
 COPY deployment/cargo-config.toml ./.cargo/config.toml
