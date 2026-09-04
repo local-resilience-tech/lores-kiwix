@@ -4,6 +4,9 @@ version = "0.1.0"
 edition = "2024"
 links = "kiwix"
 
+[package.metadata.release]
+release = false
+
 [dependencies]
 cxx = { workspace = true }
 

@@ -3,6 +3,9 @@ name = "lores-kiwix-dev-server"
 version = "0.1.0"
 edition = "2024"
 
+[package.metadata.release]
+release = false
+
 [dependencies]
 lores-dev-server = "0.1.0"
 tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }

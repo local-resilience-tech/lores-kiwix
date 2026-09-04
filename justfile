@@ -45,3 +45,17 @@ docker-run ZIM_PATH=ZIM_DIR PORT="8080":
 # Stop a running `just docker-run` container.
 docker-stop:
     docker stop lores-kiwix
+
+# Install required dev tools (run this once after cloning).
+setup:
+    cargo install cargo-release
+
+# Dry-run a release (no changes made) — pick: patch, minor, or major.
+release-dry level:
+    cargo test
+    cargo release {{level}} -p lores-kiwix
+
+# Execute a release — bumps version, commits, tags, and pushes.
+release level:
+    cargo test
+    cargo release {{level}} -p lores-kiwix --execute

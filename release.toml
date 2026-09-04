@@ -1,0 +1,20 @@
+# cargo-release configuration
+# Install with: cargo install cargo-release
+# Usage: cargo release patch|minor|major --execute
+
+# Not published to crates.io (distributed as a container image)
+publish = false
+
+# Only allow releases from main branch
+allow-branch = ["main"]
+
+# Release only lores-kiwix, so use a per-crate commit (not a workspace-wide one)
+consolidate-commits = false
+
+# Tag format: v0.1.0
+tag-prefix = ""
+tag-name = "v{{version}}"
+
+# Conventional commit style messages
+pre-release-commit-message = "chore: release v{{version}}"
+tag-message = "Release v{{version}}"
