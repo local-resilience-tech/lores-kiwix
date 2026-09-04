@@ -30,10 +30,10 @@ pub fn handler(
 }
 
 pub async fn serve_static_file(static_path: &str, content_type: &str) -> Response {
-    let mut file_path = concat!(env!("CARGO_MANIFEST_DIR"), "/static").to_string();
-    file_path.push_str(static_path);
+    let relative_path = static_path.strip_prefix('/').unwrap_or(static_path);
+    let file_path = super::static_dir().join(relative_path);
 
-    match tokio::fs::read_to_string(file_path).await {
+    match tokio::fs::read_to_string(&file_path).await {
         Ok(contents) => Response::builder()
             .status(StatusCode::OK)
             .header(header::CONTENT_TYPE, content_type)

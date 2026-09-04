@@ -1,0 +1,10 @@
+target/
+.dev/
+.git/
+.github/
+Dockerfile
+.dockerignore
+mprocs.yaml
+mprocs.log
+*.log
+
