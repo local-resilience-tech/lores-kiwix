@@ -90,12 +90,17 @@ COPY --from=builder /app/crates/lores-kiwix/static /usr/local/share/lores-kiwix/
 #   DATA_DIR               Directory for the operations SQLite database.
 #   KIWIX_INTERNAL_BIND    Bind address for the internal libkiwix HTTP server.
 #   LORES_KIWIX_STATIC_DIR Directory containing static override assets.
+#   ZIM_PATH               Path to the ZIM file or directory to serve.
 #
-# ZIM files are provided at runtime by mounting a host directory:
-#   docker run -v /path/to/zims:/zim:ro lores-kiwix /zim 0.0.0.0:8080
+# ZIM files are provided at runtime by mounting a host directory. The path
+# inside the container is set via the ZIM_PATH env var (defaulting to /zim
+# below) or as the first command argument:
+#   docker run -v /path/to/zims:/zim:ro lores-kiwix
+#   docker run -v /path/to/zims:/data/zims:ro -e ZIM_PATH=/data/zims lores-kiwix
 ENV DATA_DIR=/data
 ENV KIWIX_INTERNAL_BIND=127.0.0.1:18080
 ENV LORES_KIWIX_STATIC_DIR=/usr/local/share/lores-kiwix/static
+ENV ZIM_PATH=/zims
 
 EXPOSE 8080
 

@@ -18,8 +18,14 @@ const DATA_DIR_DEFAULT: &str = "./data";
 const KIWIX_INTERNAL_BIND_ENV: &str = "KIWIX_INTERNAL_BIND";
 const KIWIX_INTERNAL_BIND_DEFAULT: &str = "127.0.0.1:18080";
 
+const ZIM_PATH_ENV: &str = "ZIM_PATH";
+
 fn usage(program: &str) {
-    eprintln!("Usage: {} <zim-file-or-dir> [address:port]", program);
+    eprintln!("Usage: {} [zim-file-or-dir] [address:port]", program);
+    eprintln!(
+        "  zim-file-or-dir may also be set via the {} environment variable",
+        ZIM_PATH_ENV
+    );
     eprintln!("  address:port defaults to 0.0.0.0:8080");
 }
 
@@ -39,13 +45,15 @@ async fn main() {
     let args: Vec<String> = env::args().collect();
     let program = args.first().map(|s| s.as_str()).unwrap_or("lores-kiwix");
 
-    if args.len() < 2 {
+    let zim_path = args.get(1).cloned().or_else(|| env::var(ZIM_PATH_ENV).ok());
+
+    let Some(zim_path) = zim_path else {
         usage(program);
         std::process::exit(1);
-    }
+    };
 
     let config = BootConfig {
-        path: args[1].clone(),
+        path: zim_path,
         panda_grpc_addr: env::var(PANDA_GRPC_ADDR_ENV).unwrap_or_else(|_| PANDA_GRPC_ADDR_DEFAULT.to_string()),
         app_id: env::var(APP_ID_ENV).unwrap_or_else(|_| APP_ID_DEFAULT.to_string()),
         instance_id: env::var(INSTANCE_ID_ENV).unwrap_or_else(|_| INSTANCE_ID_DEFAULT.to_string()),
