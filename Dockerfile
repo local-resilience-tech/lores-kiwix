@@ -93,9 +93,9 @@ COPY --from=builder /app/crates/lores-kiwix/static /usr/local/share/lores-kiwix/
 #   ZIM_PATH               Path to the ZIM file or directory to serve.
 #
 # ZIM files are provided at runtime by mounting a host directory. The path
-# inside the container is set via the ZIM_PATH env var (defaulting to /zim
+# inside the container is set via the ZIM_PATH env var (defaulting to /zims
 # below) or as the first command argument:
-#   docker run -v /path/to/zims:/zim:ro lores-kiwix
+#   docker run -v /path/to/zims:/zims:ro lores-kiwix
 #   docker run -v /path/to/zims:/data/zims:ro -e ZIM_PATH=/data/zims lores-kiwix
 ENV DATA_DIR=/data
 ENV KIWIX_INTERNAL_BIND=127.0.0.1:18080
