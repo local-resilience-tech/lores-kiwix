@@ -78,6 +78,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         ca-certificates \
         libkiwix14 \
+        curl \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /app/lores-kiwix-bin /usr/local/bin/lores-kiwix
