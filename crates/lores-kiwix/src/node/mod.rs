@@ -13,13 +13,20 @@ pub async fn connect(
     grpc_addr: String,
     app_id: impl Into<String>,
     instance_id: impl Into<String>,
+    replay: bool,
 ) -> Result<LoresKiwixNode, ConnectError> {
+    let from = if replay {
+        SubscriptionFrom::Start
+    } else {
+        SubscriptionFrom::Frontier
+    };
+
     AppNode::grpc_with_local(
         local_operations_pool,
         grpc_addr,
         app_id,
         instance_id,
-        SubscriptionFrom::Frontier,
+        from,
     )
     .await
 }
