@@ -1,4 +1,5 @@
 use lores_app_node::{AppNode, ConnectError};
+use lores_p2panda_client::SubscriptionFrom;
 use sqlx::SqlitePool;
 
 use self::operations::AppOperation;
@@ -13,5 +14,12 @@ pub async fn connect(
     app_id: impl Into<String>,
     instance_id: impl Into<String>,
 ) -> Result<LoresKiwixNode, ConnectError> {
-    AppNode::grpc_with_local(local_operations_pool, grpc_addr, app_id, instance_id).await
+    AppNode::grpc_with_local(
+        local_operations_pool,
+        grpc_addr,
+        app_id,
+        instance_id,
+        SubscriptionFrom::Frontier,
+    )
+    .await
 }

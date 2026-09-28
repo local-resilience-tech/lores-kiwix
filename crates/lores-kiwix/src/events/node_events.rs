@@ -20,6 +20,12 @@ pub fn register(node: &LoresKiwixNode, pool: SqlitePool) {
                 Ok(NodeEvent::ServerDisconnected) => {
                     tracing::info!("node event: server disconnected");
                 }
+                Ok(NodeEvent::ReplayStarted { .. }) => {
+                    tracing::info!("node event: replay started");
+                }
+                Ok(NodeEvent::ReplayEnded) => {
+                    tracing::info!("node event: replay ended");
+                }
                 Err(tokio::sync::broadcast::error::RecvError::Lagged(n)) => {
                     tracing::warn!(skipped = n, "Node event handler lagged");
                 }

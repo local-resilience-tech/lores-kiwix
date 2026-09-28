@@ -98,7 +98,7 @@ impl From<lores_app_node::ConnectError> for BootError {
 /// node to finish replay, and then synchronises the filesystem against the
 /// library — publishing any registration or deregistration operations.
 pub async fn boot(config: &BootConfig) -> Result<BootResult, BootError> {
-    let (projection_pool, should_replay) = match &config.projection_db {
+    let (projection_pool, _should_replay) = match &config.projection_db {
         ProjectionDbConfig::InMemory => create_projection_db().await?,
         ProjectionDbConfig::OnDisk(path) => open_projection_db(path).await?,
     };
@@ -123,11 +123,13 @@ pub async fn boot(config: &BootConfig) -> Result<BootResult, BootError> {
     let (ready_tx, mut ready_rx) = tokio::sync::watch::channel(false);
 
     tokio::spawn(async move {
-        if should_replay {
-            if let Err(err) = run_node.replay().await {
-                tracing::error!(error = %err, "replay failed");
-            }
-        }
+        // NOTE: `replay()` was removed in the upgraded lores-app-node API.
+        // The node now subscribes from `SubscriptionFrom::Frontier` only.
+        // if should_replay {
+        //     if let Err(err) = run_node.replay().await {
+        //         tracing::error!(error = %err, "replay failed");
+        //     }
+        // }
         let _ = ready_tx.send(true);
         run_node.run().await;
     });
