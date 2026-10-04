@@ -5,9 +5,6 @@
 # first and then `exec` the binary so mprocs signals reach the application
 # directly (`cargo run` does not reliably forward signals to its child binary).
 procs:
-  panda-dev-server:
-    cwd: <CONFIG_DIR>
-    shell: "cargo build -p lores-kiwix-dev-server && exec ./target/debug/lores-kiwix-dev-server"
   kiwix-a:
     cwd: <CONFIG_DIR>
     shell: >-
@@ -27,6 +24,7 @@ procs:
       KIWIX_INTERNAL_BIND=127.0.0.1:18081
       ./target/debug/lores-kiwix ./.dev/data-b/zims "127.0.0.1:$BASE_PORT_2"
     autostart: false
-
-keymap:
-  quit: q
+  panda-dev-server:
+    cwd: <CONFIG_DIR>
+    shell: "cargo build -p lores-kiwix-dev-server && exec ./target/debug/lores-kiwix-dev-server"
+    autostart: false

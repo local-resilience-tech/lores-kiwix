@@ -1,8 +1,8 @@
 use libkiwix_rust::BookMetadata;
-use sqlx::{FromRow, SqlitePool};
+use sqlx::{FromRow, QueryBuilder, SqlitePool};
 
 use crate::node::operations::BookRegisteredDataV1;
-use crate::utilities::filter::{FilterCriteria, build_filter_clauses};
+use crate::utilities::filter::{FilterCriteria, push_filter_clauses};
 
 #[derive(Debug, Clone, FromRow, Default)]
 #[allow(dead_code)]
@@ -75,24 +75,19 @@ pub async fn list_remote_books_filtered(
     pool: &SqlitePool,
     criteria: FilterCriteria<'_>,
 ) -> Result<Vec<BookRow>, sqlx::Error> {
-    let base = format!(
-        "SELECT DISTINCT {SELECT_BOOK_COLUMNS} FROM books \
-         JOIN holdings ON holdings.book_id = books.id \
-         JOIN nodes ON nodes.id = holdings.node_id \
-         WHERE nodes.local = FALSE"
-    );
+    let mut query = QueryBuilder::new("SELECT DISTINCT ");
+    query
+        .push(SELECT_BOOK_COLUMNS)
+        .push(" FROM books")
+        .push(" JOIN holdings ON holdings.book_id = books.id")
+        .push(" JOIN nodes ON nodes.id = holdings.node_id")
+        .push(" WHERE nodes.local = FALSE");
 
-    let (sql, params) = match build_filter_clauses(criteria) {
-        Some((where_clause, params)) => (format!("{base} AND {where_clause} ORDER BY title"), params),
-        None => (format!("{base} ORDER BY title"), vec![]),
-    };
+    push_filter_clauses(&mut query, criteria);
 
-    let mut query_builder = sqlx::query_as::<_, BookRow>(&sql);
-    for param in &params {
-        query_builder = query_builder.bind(param);
-    }
+    query.push(" ORDER BY title");
 
-    query_builder.fetch_all(pool).await
+    query.build_query_as::<BookRow>().fetch_all(pool).await
 }
 
 impl Into<BookMetadata> for BookRow {

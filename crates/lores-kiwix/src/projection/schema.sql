@@ -1,4 +1,4 @@
--- Projection schema for lores-websites.
+-- Projection schema for lores-kiwix.
 --
 -- This is the single source of truth for the projection database schema.
 -- Edit this file freely — the framework detects changes via a content hash

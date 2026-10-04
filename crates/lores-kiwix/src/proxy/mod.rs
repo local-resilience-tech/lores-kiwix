@@ -12,7 +12,7 @@ use axum_reverse_proxy::ReverseProxy;
 use libkiwix_rust::LibraryHandle;
 use sqlx::SqlitePool;
 
-use crate::api::{ApiState, categories, entries, holding_libraries, languages};
+use crate::api::{ApiState, categories, entries, holding_libraries, languages, viewer_settings};
 use crate::node::LoresKiwixNode;
 
 mod append_text;
@@ -67,6 +67,7 @@ pub fn app(
                 "application/json; charset=utf-8",
             )),
         )
+        .route("/viewer_settings.js", any(viewer_settings::handler))
         .fallback_service(ReverseProxy::new("/", state.upstream.as_str()))
         .with_state(state)
 }

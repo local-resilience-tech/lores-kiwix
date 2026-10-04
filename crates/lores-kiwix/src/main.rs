@@ -7,10 +7,10 @@ const PANDA_GRPC_ADDR_ENV: &str = "PANDA_GRPC_ADDR";
 const PANDA_GRPC_ADDR_DEFAULT: &str = "http://127.0.0.1:50051";
 
 const APP_ID_ENV: &str = "LORES_APP_ID";
-const APP_ID_DEFAULT: &str = "lores-websites";
+const APP_ID_DEFAULT: &str = "lores-kiwix";
 
 const INSTANCE_ID_ENV: &str = "LORES_INSTANCE_ID";
-const INSTANCE_ID_DEFAULT: &str = "default";
+const INSTANCE_ID_DEFAULT: &str = "instance-01";
 
 const DATA_DIR_ENV: &str = "DATA_DIR";
 const DATA_DIR_DEFAULT: &str = "./data";
