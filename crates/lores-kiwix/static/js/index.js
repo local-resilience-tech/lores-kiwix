@@ -27,6 +27,8 @@
   let languages = {};
   let previousScrollTop = Infinity;
 
+  console.log('viewerSettings', viewerSettings);
+
   function updateFeedLink() {
     const inputParams = new FragmentParams(window.location.hash);
     const filteredParams = new FragmentParams();

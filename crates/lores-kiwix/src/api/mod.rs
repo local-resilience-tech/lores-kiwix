@@ -10,6 +10,7 @@ pub mod categories;
 pub mod entries;
 pub mod holding_libraries;
 pub mod languages;
+pub mod viewer_settings;
 
 /// Shared state passed to API route handlers.
 #[derive(Clone)]
