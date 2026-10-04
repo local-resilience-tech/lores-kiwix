@@ -27,8 +27,6 @@
   let languages = {};
   let previousScrollTop = Infinity;
 
-  console.log('viewerSettings', viewerSettings);
-
   function updateFeedLink() {
     const inputParams = new FragmentParams(window.location.hash);
     const filteredParams = new FragmentParams();
@@ -644,13 +642,26 @@
   }
 
   function updateUIText() {
-    footer.innerHTML = $t("powered-by-kiwix-html");
+    updateFooter();
     const searchText = $t("search");
     document.getElementById("searchFilter").placeholder = searchText;
     document.getElementById("searchButton").value = searchText;
     document.getElementById("categoryFilter").children[0].innerHTML = $t("book-filtering-all-categories");
     document.getElementById("languageFilter").children[0].innerHTML = $t("book-filtering-all-languages");
     setFeedToolTip();
+  }
+
+  function updateFooter() {
+    console.log('viewerSettings', viewerSettings);
+    const currentError = viewerSettings.currentError;
+
+    if (!currentError) {
+      footer.className = "kiwixfooter";
+      footer.innerHTML = $t("powered-by-kiwix-html");
+    } else {
+      footer.className = `kiwixfooter error ${currentError.type}`
+      footer.innerHTML = `<div>${currentError.message}<div>`;
+    }
   }
 
   async function onload() {

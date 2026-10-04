@@ -8,3 +8,10 @@ div.book__wrapper.source-remote {
 div.book__wrapper.source-local {
   border-width: 3px;
 }
+
+.kiwixfooter.error {
+  color: #8b2b13;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
