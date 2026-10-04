@@ -1181,7 +1181,7 @@ version = "0.2.0"
 dependencies = [
  "futures",
  "hex",
- "lores-p2panda-client",
+ "lores-p2panda-client 0.5.0",
  "serde",
  "serde_json",
  "sha2 0.11.0",
@@ -1198,7 +1198,24 @@ version = "0.3.0"
 dependencies = [
  "futures",
  "hex",
- "lores-p2panda-client",
+ "lores-p2panda-client 0.5.0",
+ "sha2 0.11.0",
+ "tokio",
+ "tokio-stream",
+ "tonic",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "lores-dev-server"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4ad731bb3c0de6cc24983d4b81f9b8f6c644b715de35419e678bec4f5b5ced02"
+dependencies = [
+ "futures",
+ "hex",
+ "lores-p2panda-client 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "sha2 0.11.0",
  "tokio",
  "tokio-stream",
@@ -1219,8 +1236,8 @@ dependencies = [
  "indoc",
  "libkiwix-rust",
  "lores-app-node",
- "lores-dev-server",
- "lores-p2panda-client",
+ "lores-dev-server 0.3.0",
+ "lores-p2panda-client 0.5.0",
  "pretty_assertions",
  "reqwest",
  "serde",
@@ -1240,7 +1257,7 @@ dependencies = [
 name = "lores-kiwix-dev-server"
 version = "0.1.0"
 dependencies = [
- "lores-dev-server",
+ "lores-dev-server 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio",
  "tonic",
  "tracing-subscriber",
@@ -1248,11 +1265,24 @@ dependencies = [
 
 [[package]]
 name = "lores-p2panda-client"
-version = "0.4.0"
+version = "0.5.0"
 dependencies = [
  "hex",
  "prost",
  "serde",
+ "tonic",
+ "tonic-prost",
+ "tonic-prost-build",
+]
+
+[[package]]
+name = "lores-p2panda-client"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "02891f9d6923c5cae203509393153721b7bd75fb587d1f051ceba05cc4a5538f"
+dependencies = [
+ "hex",
+ "prost",
  "tonic",
  "tonic-prost",
  "tonic-prost-build",
