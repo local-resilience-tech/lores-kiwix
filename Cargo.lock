@@ -1177,9 +1177,9 @@ checksum = "0ceec5bc11778974d1bcb055b18002eba7f4b3518b6a0081b3af5f21666da9ad"
 
 [[package]]
 name = "lores-app-node"
-version = "0.2.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3fe376330ba0397ec090b61c1971e52cb67f24a29c15e9236492323f22fa3378"
+checksum = "56e4d53e84a434c0833c49180b59c6a924caf6fc17587b8866ba39f1c1fb7b2f"
 dependencies = [
  "futures",
  "hex",
