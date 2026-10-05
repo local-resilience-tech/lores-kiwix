@@ -4,7 +4,7 @@ mod common;
 
 use common::{
     APP_ID, SMALL_BOOK_ID, boot_with_empty_dir, seed_projection_with_local_holding, start_dev_server, temp_data_dir,
-    wait_for_operations,
+    wait_for_operations, wait_for_projection,
 };
 
 #[tokio::test]
@@ -40,14 +40,13 @@ async fn publishes_book_deregistered_when_previously_held_book_is_missing() {
         .expect("failed to query books projection");
     assert_eq!(row.0, 1, "expected book row to remain");
 
-    let row: (i64,) = sqlx::query_as(
+    wait_for_projection(
+        &result.projection_pool,
         "SELECT COUNT(*) FROM holdings
          INNER JOIN nodes ON holdings.node_id = nodes.id
          WHERE book_id = ? AND nodes.local IS TRUE",
+        SMALL_BOOK_ID,
+        |count| count == 0,
     )
-    .bind(SMALL_BOOK_ID)
-    .fetch_one(&result.projection_pool)
-    .await
-    .expect("failed to query holdings projection");
-    assert_eq!(row.0, 0, "expected local holding row to be removed");
+    .await;
 }

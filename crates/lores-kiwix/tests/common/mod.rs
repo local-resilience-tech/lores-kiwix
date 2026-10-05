@@ -191,6 +191,26 @@ pub async fn wait_for_operations(dev_server: &DevPandaService, app_id: &str) {
     }
 }
 
+/// Poll a projection query until `predicate` returns true or a timeout is
+/// reached.
+pub async fn wait_for_projection<F>(pool: &sqlx::SqlitePool, query: &'static str, bind_id: &str, predicate: F)
+where
+    F: Fn(i64) -> bool,
+{
+    for _ in 0..50 {
+        let row: (i64,) = sqlx::query_as(query)
+            .bind(bind_id)
+            .fetch_one(pool)
+            .await
+            .expect("failed to query projection");
+        if predicate(row.0) {
+            return;
+        }
+        sleep(Duration::from_millis(10)).await;
+    }
+    panic!("projection did not reach expected state within 500ms");
+}
+
 /// The dev-server-derived node id for the first fake remote instance.
 pub fn remote_node_id() -> String {
     hex::encode(Sha256::digest(REMOTE_INSTANCE_ID.as_bytes()))
